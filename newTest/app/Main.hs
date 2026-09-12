@@ -1,10 +1,33 @@
+{-# LANGUAGE ParallelListComp #-}
 module Main(main) where
 
-import Codec.Picture.Types
-import Codec.Picture
+import Graphics.Gloss
 
+main :: IO ()
+main
+ = display
+        (InWindow  "Colors" (800, 800) (5, 5))
+        (greyN 0.4)
+        (Pictures
+                [ Translate
+                        (200 * cos (2 * pi * (fromIntegral n) / 12))
+                        (200 * sin (2 * pi * (fromIntegral n) / 12))
+                $ Color (withAlpha 0.8 c) $ circleSolid 100
+                        | n <- [0 .. length colors]
+                        | c <- colors ])
 
-
-main :: IO (Either String Codec.Picture.Types.DynamicImage)
-
-main = readImage "bunny.jpg"
+colors :: [ Color ]
+colors
+ =      [ red
+        , orange
+        , yellow
+        , chartreuse
+        , green
+        , aquamarine
+        , cyan
+        , azure
+        , blue
+        , violet
+        , magenta
+        , rose
+        ]

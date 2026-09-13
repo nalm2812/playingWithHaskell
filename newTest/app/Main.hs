@@ -1,33 +1,17 @@
-{-# LANGUAGE ParallelListComp #-}
 module Main(main) where
 
-import Graphics.Gloss
+import Graphics.UI.GLUT
 
 main :: IO ()
-main
- = display
-        (InWindow  "Colors" (800, 800) (5, 5))
-        (greyN 0.4)
-        (Pictures
-                [ Translate
-                        (200 * cos (2 * pi * (fromIntegral n) / 12))
-                        (200 * sin (2 * pi * (fromIntegral n) / 12))
-                $ Color (withAlpha 0.8 c) $ circleSolid 100
-                        | n <- [0 .. length colors]
-                        | c <- colors ])
+--main = display (InWindow "Nice Window" (200, 200) (10, 10)) white (Arc 0 90 80)
+main = do
+  (_progName, _args) <- getArgsAndInitialize
+  _window <- createWindow "Hello World"
+  displayCallback $= display
+  mainLoop
 
-colors :: [ Color ]
-colors
- =      [ red
-        , orange
-        , yellow
-        , chartreuse
-        , green
-        , aquamarine
-        , cyan
-        , azure
-        , blue
-        , violet
-        , magenta
-        , rose
-        ]
+display :: DisplayCallback
+display = do
+  clear [ ColorBuffer ]
+  flush
+

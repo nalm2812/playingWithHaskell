@@ -1,5 +1,5 @@
 cabal-version:      3.0
-name:               newtest
+name:               uhhhhh
 version:            0.1.0.0
 synopsis:           A new Haskell project
 license:            BSD-3-Clause
@@ -12,18 +12,17 @@ extra-doc-files:    CHANGELOG.md
 common warnings
     ghc-options: -Wall
 
-
-
-executable newtest
+executable uhhhhh
     import:           warnings
     main-is:          Main.hs
-    build-depends:    base >= 4.14 && < 5,
-                      JuicyPixels          >=3.3.3,
-                      gloss >=1.13.0.1
+    build-depends:
+        base >= 4.14 && < 5,
+        gloss >=1.13.0.1,
+        AsyncRattus >= 0.2
     hs-source-dirs:   app
     default-language: GHC2021
 
-test-suite newtest-test
+test-suite uhhhhh-test
     import:           warnings
     default-language: GHC2021
     type:             exitcode-stdio-1.0
@@ -31,5 +30,5 @@ test-suite newtest-test
     main-is:          Main.hs
     build-depends:
         base >= 4.14 && < 5,
-        JuicyPixels          >=3.3.3,
-        gloss >=1.13.0.1
+        gloss >=1.13.0.1,
+        AsyncRattus >= 0.2

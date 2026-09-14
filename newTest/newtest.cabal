@@ -19,9 +19,7 @@ executable newtest
     main-is:          Main.hs
     build-depends:    base >= 4.14 && < 5,
                       JuicyPixels          >=3.3.3,
-                      gloss >=1.13.0.1,
-                      OpenGL >=3.0.3.0,
-                      GLUT >=2.7.0.14
+                      gloss >=1.13.0.1
     hs-source-dirs:   app
     default-language: GHC2021
 
@@ -34,6 +32,4 @@ test-suite newtest-test
     build-depends:
         base >= 4.14 && < 5,
         JuicyPixels          >=3.3.3,
-        gloss >=1.13.0.1,
-        OpenGL >=3.0.3.0,
-        GLUT >=2.7.0.14
+        gloss >=1.13.0.1

@@ -1,3 +1,4 @@
+{- HLINT ignore "Use newtype instead of data" -}
 module Main(main) where
 
 import Graphics.Gloss
@@ -6,8 +7,8 @@ main :: IO ()
 main = printBeh laterPipingB
 --display (InWindow "Nice Window" (200, 200) (10, 10)) white circleDraw
 
-data Behavior a =
-    Behavior (Float -> (a, Behavior a))
+
+data Behavior a = Behavior (Float -> (a, Behavior a))
 
 circleDraw :: Picture
 circleDraw = Circle 80
@@ -48,8 +49,12 @@ liftB f x =
                                 let test b (huh::Float) = (f a, b); idk = Behavior (test idk) in idk
 evenOrOdd :: Integer -> String
 evenOrOdd x = if even x then "Even" else "Odd"
-laterPipingB = liftB evenOrOdd intBeh3
+laterPipingB = liftB evenOrOdd intBehMaybe
 intBeh3 = let test b number = (3, b) in Behavior (test intBeh2)
+
+intBehMaybe = let test b number = if number == 0 then (3, b) else (4,b) in Behavior (test intBehMaybe)
+
+
 
 
 

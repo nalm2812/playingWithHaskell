@@ -3,7 +3,8 @@ module Main(main) where
 import Graphics.Gloss
 
 main :: IO ()
-main = display (InWindow "Nice Window" (200, 200) (10, 10)) white circleDraw
+main = printBeh laterPiping
+--display (InWindow "Nice Window" (200, 200) (10, 10)) white circleDraw
 
 data Behavior a =
     Behavior (Float -> (a, Behavior a))
@@ -21,15 +22,22 @@ circleAnimation = Behavior (testFunction circleAnimation)
 
 add :: Integer -> Integer
 add x = x+x
-result x f=
+liftA :: (a->a) -> (Behavior a -> Behavior a)
+liftA f x=
     case x of
         Behavior y -> case y 0 of
                         (a, Behavior z) ->
-                            let test (b::Behavior Integer) (huh::Float) = (f a, b); idk = Behavior(test idk) in idk
-                        _ -> let test (b::Behavior Integer) (huh::Float) = (0, b); idk = Behavior(test idk) in idk
-        _ -> let test b huh = (0, b); idk = Behavior(test idk) in idk
+                            let test b (huh::Float) = (f a, b); idk = Behavior (test idk) in idk
 
---liftA :: (a->a) -> (Behavior a -> Behavior a)
+intBeh2 :: Behavior Integer
+intBeh2 = let test b number = (2, b) in Behavior (test intBeh2)
+printBeh :: Behavior Integer -> IO ()
+printBeh b =
+    case b of
+        Behavior y ->
+            case y 0 of
+                (a, _) -> print a
+laterPiping = liftA add intBeh2
 
 
 

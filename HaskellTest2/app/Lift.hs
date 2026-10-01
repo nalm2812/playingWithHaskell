@@ -1,4 +1,5 @@
-﻿module Lift where
+﻿{-# LANGUAGE ScopedTypeVariables #-}
+module Lift where
 
 import Graphics.Gloss
 data Behavior a = Behavior (Float -> (a, Behavior a))
@@ -36,6 +37,13 @@ laterPipingB = liftB evenOrOdd intBehMaybe
 intBeh3 = let test b number = (3, b) in Behavior (test intBeh2)
 
 intBehMaybe = let test b number = if number == 0 then (3, b) else (4,b) in Behavior (test intBehMaybe)
+
+unlift0 :: Behavior Picture -> Float -> Picture
+unlift0 b t=
+    case b of
+        Behavior y ->
+            case y t of
+                (a, Behavior z) -> a
 
 --value number =abs (5*sin (number/5 ))
 --circleAnimation :: Behavior Picture

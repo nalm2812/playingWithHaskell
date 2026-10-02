@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (extractBeh behDraw)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (extractBeh newBehDraw)
 --printBeh laterPipingB
 --display (InWindow "Nice Window" (200, 200) (10, 10)) white circleDraw
 data Behavior a = Behavior (Float -> (a, Behavior a))
@@ -42,12 +42,11 @@ bscale = lift3 scale
 constant :: a -> Behavior a
 constant a = Behavior ab where ab t = (a, constant a)
 behCircle = constant circleDraw
-behDraw :: Behavior Picture
-behDraw = bscale valueBeh valueBeh behCircle
---valueBeh = Behavior b where b t = (abs(5*sin (t/5)), valueBeh)
-valueBeh = timeDependentBeh value
 extractBeh :: Behavior Picture -> (Float -> Picture)
 extractBeh (Behavior b) = f where f t = let(a,ba)=b t in a
-timeDependentBeh :: (Float -> a) -> Behavior a
-timeDependentBeh f = Behavior b where b t = (f t, timeDependentBeh f)
+
+time :: Behavior Float
+time = Behavior(\t -> (t, time))
+newBehDraw = bscale (lift1 value time) (lift1 value time) behCircle
+
 

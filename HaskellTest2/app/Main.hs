@@ -30,3 +30,12 @@ unlift0 b t=
             case y t of
                 (a, Behavior z) -> a
 
+lift2 :: (a -> b -> c) -> Behavior a -> Behavior b -> Behavior c
+lift2 f (Behavior fa) (Behavior fb) = Behavior fc where fc t = let(a,ba) = fa t; (b,bb) = fb t in (f a b, lift2 f ba bb)
+lift3 :: (a -> b -> c -> d) -> Behavior a -> Behavior b -> Behavior c -> Behavior d
+lift3 f (Behavior fa) (Behavior fb) (Behavior fc) = Behavior fd where fd t = let(a,ba) = fa t; (b,bb) = fb t; (c, bc) = fc t in (f a b c, lift3 f ba bb bc)
+bscale :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
+bscale = lift3 scale
+constant :: a -> Behavior a
+constant a = Behavior ab where ab t = (a, constant a)
+behCircle = constant circleDraw

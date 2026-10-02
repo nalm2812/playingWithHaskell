@@ -44,8 +44,10 @@ constant a = Behavior ab where ab t = (a, constant a)
 behCircle = constant circleDraw
 behDraw :: Behavior Picture
 behDraw = bscale valueBeh valueBeh behCircle
-valueBeh = Behavior b where b t = (abs(5*sin (t/5)), valueBeh)
-badBehDraw = Behavior fa where fa t = (scale (value t) (value t) circleDraw, badBehDraw)
+--valueBeh = Behavior b where b t = (abs(5*sin (t/5)), valueBeh)
+valueBeh = timeDependentBeh value
 extractBeh :: Behavior Picture -> (Float -> Picture)
 extractBeh (Behavior b) = f where f t = let(a,ba)=b t in a
+timeDependentBeh :: (Float -> a) -> Behavior a
+timeDependentBeh f = Behavior b where b t = (f t, timeDependentBeh f)
 

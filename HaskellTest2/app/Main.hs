@@ -23,14 +23,6 @@ wiggle t = sin (pi*t)
 wiggleRange :: Float -> Float -> Float -> Picture
 wiggleRange hi lo t = translate 0 (lo + (hi-lo) * (wiggle t+1)/2) circleDraw
 
-
-unlift0 :: Behavior Picture -> Float -> Picture
-unlift0 b t=
-    case b of
-        Behavior y ->
-            case y t of
-                (a, Behavior z) -> a
-
 lift1 :: (a -> b) -> Behavior a -> Behavior b
 lift1 f (Behavior fa) = Behavior fb where fb t = let(a,ba) = fa t in (f a, lift1 f ba)
 lift2 :: (a -> b -> c) -> Behavior a -> Behavior b -> Behavior c

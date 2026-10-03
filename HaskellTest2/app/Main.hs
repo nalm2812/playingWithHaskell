@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (extractBeh behSquareZoom)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (extractBeh behRhombuSpin)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 
 circleDraw :: Picture
@@ -85,5 +85,13 @@ behRhombus= lift1 rhombus
 behRhombus50 :: Behavior Picture
 behRhombus50 = behRhombus (constant 50)
 
-behSquareZoom :: Behavior Picture
-behSquareZoom = behZoom (constant 5) behRhombus50
+
+behRhombusZoom :: Behavior Picture
+behRhombusZoom = behZoom (constant 5) behRhombus50
+bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
+bRotate = lift2 rotate --should i add time here?
+behRotateFactor :: Behavior Float -> Behavior Picture -> Behavior Picture
+behRotateFactor factor = bRotate (lift2 (*) factor time)
+behRhombuSpin :: Behavior Picture
+behRhombuSpin = behRotateFactor (constant 10) behRhombus50
+

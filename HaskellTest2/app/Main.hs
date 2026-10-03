@@ -3,9 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (extractBeh behWiggleAnimation)
---printBeh laterPipingB
---display (InWindow "Nice Window" (200, 200) (10, 10)) white circleDraw
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (extractBeh twoWiggle)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 
 circleDraw :: Picture
@@ -14,7 +12,7 @@ drawPicture :: Float -> Picture
 drawPicture number = scale value value circleDraw where value = abs (5*sin (number/5 ))
 --behDraw :: Behavior Picture
 value :: Float -> Float -> Float
-value number factor =abs(factor*sin (number/factor))
+value number factor =abs (factor*sin (number/factor))
 --behDraw = let test b t = (scale (value t) (value t) circleDraw, b) in Behavior(test behDraw)
 
 
@@ -35,18 +33,31 @@ bscale :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Pictu
 bscale = lift3 scale
 constant :: a -> Behavior a
 constant a = Behavior ab where ab t = (a, constant a)
-behCircle = constant circleDraw
+behCircle :: Behavior Float -> Behavior Picture
+behCircle = lift1 Circle
+behCircle80 = constant circleDraw
 extractBeh :: Behavior Picture -> (Float -> Picture)
 extractBeh (Behavior b) = f where f t = let(a,ba)=b t in a
 
 time :: Behavior Float
-time = Behavior(\t -> (t, time))
-behDraw = bscale (lift2 value time (constant 5)) (lift2 value time (constant 5)) behCircle
+time = Behavior (\t -> (t, time))
+behZoom :: Behavior Float -> Behavior Picture -> Behavior Picture
+behZoom factor = bscale (lift2 value time factor) (lift2 value time factor)
+behCircleZoom :: Behavior Picture
+behCircleZoom = behZoom (constant 5) behCircle80
 behWiggleMotion :: Behavior Float
 behWiggleMotion = lift1 wiggle time
 btranslate :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 btranslate = lift3 translate
 behWiggleRange :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 behWiggleRange hi lo = btranslate (constant 0) (lift3 (\h l w-> l + (h-l) * (w+1)/2) hi lo behWiggleMotion)
-behWiggleAnimation :: Behavior Picture
-behWiggleAnimation = behWiggleRange (constant 20) (constant 0) behCircle
+behWiggleAnimationLocation :: Behavior Float -> Behavior Picture
+behWiggleAnimationLocation x = btranslate x (constant 0) (behWiggleRange (constant 20) (constant 0) behCircle80)
+addPicture :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
+addPicture = lift2 (:)
+bpictures :: Behavior [Picture] -> Behavior Picture
+emptyList :: Behavior [Picture]
+emptyList = constant []
+bpictures = lift1 pictures
+twoWiggle :: Behavior Picture
+twoWiggle = bpictures (addPicture (behWiggleAnimationLocation (constant (-100))) (addPicture (behWiggleAnimationLocation (constant 100)) emptyList))

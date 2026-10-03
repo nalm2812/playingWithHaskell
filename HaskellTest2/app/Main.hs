@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (extractBeh twoWiggle)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (extractBeh behSquareZoom)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 
 circleDraw :: Picture
@@ -77,3 +77,13 @@ behWiggleMotionCos :: Behavior Float
 behWiggleMotionCos = lift1 cosWiggleMotion time
 behWiggleAnimationLocationCos :: Behavior Float -> Behavior Float -> Behavior Picture
 behWiggleAnimationLocationCos x = behWiggleAnimationLocation x behWiggleMotionCos
+
+behRhombus :: Behavior Float -> Behavior Picture
+rhombus :: Float -> Picture
+rhombus r = Polygon [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]
+behRhombus= lift1 rhombus
+behRhombus50 :: Behavior Picture
+behRhombus50 = behRhombus (constant 50)
+
+behSquareZoom :: Behavior Picture
+behSquareZoom = behZoom (constant 5) behRhombus50

@@ -56,9 +56,9 @@ btranslate ::  Behavior Float -> Behavior Float -> Behavior Picture -> Behavior 
 btranslate = lift3 translate
 behWiggleRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 behWiggleRange hi lo wiggle= btranslate (constant 0) (lift3 (\h l w-> l + (h-l) * (w+1)/2) hi lo wiggle)
-behWiggleAnimationLocation :: Behavior Float -> Behavior Float -> Behavior Picture
-behWiggleAnimationLocation x wiggle = btranslate x (constant 0) (behWiggleRange (constant 20) (constant 0) wiggle behCircle80)
-behWiggleAnimationLocationSin :: Behavior Float -> Behavior Picture
+behWiggleAnimationLocation :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
+behWiggleAnimationLocation x wiggle factor = btranslate x (constant 0) (behWiggleRange factor (constant 0) wiggle behCircle80)
+behWiggleAnimationLocationSin :: Behavior Float -> Behavior Float -> Behavior Picture
 behWiggleAnimationLocationSin x = behWiggleAnimationLocation x behWiggleMotion
 
 
@@ -69,11 +69,11 @@ emptyList :: Behavior [Picture]
 emptyList = constant []
 bpictures = lift1 pictures
 twoWiggle :: Behavior Picture
-twoWiggle = bpictures (addPicture (behWiggleAnimationLocationSin (constant (-100))) (addPicture (behWiggleAnimationLocationCos (constant 100)) emptyList))
+twoWiggle = bpictures (addPicture (behWiggleAnimationLocationSin (constant (-100)) (constant 100)) (addPicture (behWiggleAnimationLocationCos (constant 100) (constant 100)) emptyList))
 
 cosWiggleMotion :: Float -> Float
 cosWiggleMotion t = cos (pi*t)
 behWiggleMotionCos :: Behavior Float
 behWiggleMotionCos = lift1 cosWiggleMotion time
-behWiggleAnimationLocationCos :: Behavior Float -> Behavior Picture
+behWiggleAnimationLocationCos :: Behavior Float -> Behavior Float -> Behavior Picture
 behWiggleAnimationLocationCos x = behWiggleAnimationLocation x behWiggleMotionCos

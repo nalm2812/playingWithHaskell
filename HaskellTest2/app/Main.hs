@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (extractBeh behRhombuSpin)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (extractBeh growingLine)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 
 circleDraw :: Picture
@@ -94,4 +94,12 @@ behRotateFactor :: Behavior Float -> Behavior Picture -> Behavior Picture
 behRotateFactor factor = bRotate (lift2 (*) factor time)
 behRhombuSpin :: Behavior Picture
 behRhombuSpin = behRotateFactor (constant 10) behRhombus50
+
+addPointToLine :: Behavior Point -> Behavior Path -> Behavior Path
+addPointToLine = lift2 (:) --maybe change
+growingLineFactor :: Behavior Float -> Behavior Picture
+growingLineFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
+growingLine :: Behavior Picture
+growingLine = growingLineFactor (constant 5)
+
 

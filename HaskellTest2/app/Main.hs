@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (extractBeh growingLine)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behRhombuSpin)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 
 circleDraw :: Picture
@@ -37,8 +37,8 @@ bscale = lift3 scale
 behCircle :: Behavior Float -> Behavior Picture
 behCircle = lift1 Circle
 behCircle80 = constant circleDraw
-extractBeh :: Behavior Picture -> (Float -> Picture)
-extractBeh (Behavior b) = f where f t = let(a,ba)=b t in a
+at :: Behavior a -> (Float -> a)
+at (Behavior b) = f where f t = let(a,ba)=b t in a
 
 time :: Behavior Float
 time = Behavior (\t -> (t, time))
@@ -93,13 +93,22 @@ bRotate = lift2 rotate --should i add time here?
 behRotateFactor :: Behavior Float -> Behavior Picture -> Behavior Picture
 behRotateFactor factor = bRotate (lift2 (*) factor time)
 behRhombuSpin :: Behavior Picture
-behRhombuSpin = behRotateFactor (constant 10) behRhombus50
+behRhombuSpin = behRotateFactor (constant 100) behRhombus50
+
 
 addPointToLine :: Behavior Point -> Behavior Path -> Behavior Path
 addPointToLine = lift2 (:) --maybe change
 growingLineFactor :: Behavior Float -> Behavior Picture
 growingLineFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
 growingLine :: Behavior Picture
-growingLine = growingLineFactor (constant 5)
+growingLine = growingLineFactor (constant 10)
 
-
+timeTransform :: Behavior a -> Behavior Float -> Behavior a
+timeTransform (Behavior b) t2 = Behavior c where c t = let(a, ab) = b (at t2 t) in (a, timeTransform ab t2)
+behRhombuSpinOne = behRotateFactor (constant 1) behRhombus50
+test = timeTransform behRhombuSpinOne (lift2 (*) time (constant 100))
+--f where f t = let(a,ba)=b t in a
+--divide :: Behavior Float -> Behavior Float
+--divide a = Behavior (\t -> (t/at a t, divide a))
+--multiply :: Behavior Float -> Behavior Float
+--multiply a = Behavior (\t -> (t*at a t, multiply a))

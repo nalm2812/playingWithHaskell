@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behRhombuSpin)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at test)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 
 circleDraw :: Picture
@@ -90,10 +90,10 @@ behRhombusZoom :: Behavior Picture
 behRhombusZoom = behZoom (constant 5) behRhombus50
 bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
 bRotate = lift2 rotate --should i add time here?
-behRotateFactor :: Behavior Float -> Behavior Picture -> Behavior Picture
-behRotateFactor factor = bRotate (lift2 (*) factor time)
+behRotate :: Behavior Picture -> Behavior Picture
+behRotate = bRotate time
 behRhombuSpin :: Behavior Picture
-behRhombuSpin = behRotateFactor (constant 100) behRhombus50
+behRhombuSpin = behRotate behRhombus50
 
 
 addPointToLine :: Behavior Point -> Behavior Path -> Behavior Path
@@ -105,8 +105,7 @@ growingLine = growingLineFactor (constant 10)
 
 timeTransform :: Behavior a -> Behavior Float -> Behavior a
 timeTransform (Behavior b) t2 = Behavior c where c t = let(a, ab) = b (at t2 t) in (a, timeTransform ab t2)
-behRhombuSpinOne = behRotateFactor (constant 1) behRhombus50
-test = timeTransform behRhombuSpinOne (lift2 (*) time (constant 100))
+test = timeTransform behRhombuSpin (lift2 (*) time (constant 100))
 --f where f t = let(a,ba)=b t in a
 --divide :: Behavior Float -> Behavior Float
 --divide a = Behavior (\t -> (t/at a t, divide a))

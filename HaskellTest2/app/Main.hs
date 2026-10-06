@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behRectangleZoom)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behCircleFilledZoom)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event (Float, a)
 
@@ -186,3 +186,10 @@ behRectangle80 :: Behavior Picture
 behRectangle80 = behRectangle (constant 80) (constant 40)
 behRectangleZoom :: Behavior Picture
 behRectangleZoom = imTired behRectangle80
+
+
+behCircleFill :: Behavior Picture -> Behavior Picture
+behCircleFill (Behavior p) = Behavior b where b t = let (Circle a, ab) = p t in (circleSolid a, behFillPolygon ab)
+behCircleFill80 :: Behavior Picture
+behCircleFill80 = behCircleFill behCircle80
+behCircleFilledZoom = imTired behCircleFill80

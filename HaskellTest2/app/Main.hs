@@ -89,13 +89,9 @@ behWiggleAnimationLocationCos :: Behavior Float -> Behavior Float -> Behavior Pi
 behWiggleAnimationLocationCos x = behWiggleAnimationLocation x behWiggleMotionCos
 
 behRhombus :: Behavior Float -> Behavior Picture
-rhombus :: Float -> Picture
-rhombus r = Polygon [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]
-behRhombus= lift1 rhombus
+behRhombus n = bPolygon (lift1 (\r -> [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]) n)
 behRhombusNoFill :: Behavior Float -> Behavior Picture
-rhombusNoFill :: Float -> Picture
-rhombusNoFill r = Line [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]
-behRhombusNoFill = lift1 rhombusNoFill
+behRhombusNoFill n = bLine (lift1 (\r -> [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]) n)
 behRhombus50 :: Behavior Picture
 behRhombus50 = behRhombus (constant 50)
 
@@ -147,6 +143,9 @@ arc80 :: Behavior Picture
 arc80 = bArc (constant 0) (constant 90) (constant 80)
 arcZoom :: Behavior Picture
 arcZoom = timeTransform (behZoom arc80) (time |* constant 2)
+
+bPolygon :: Behavior Path -> Behavior Picture
+bPolygon = lift1 polygon
 
 
 

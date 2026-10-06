@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at test)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behRhombusZoom)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 
 circleDraw :: Picture
@@ -11,8 +11,8 @@ circleDraw = Circle 80
 drawPicture :: Float -> Picture
 drawPicture number = scale value value circleDraw where value = abs (5*sin (number/5 ))
 --behDraw :: Behavior Picture
-value :: Float -> Float -> Float
-value number factor =abs (factor*sin (number/factor))
+value :: Float -> Float
+value number =abs (sin number)
 --behDraw = let test b t = (scale (value t) (value t) circleDraw, b) in Behavior(test behDraw)
 
 
@@ -44,10 +44,10 @@ time :: Behavior Float
 time = Behavior (\t -> (t, time))
 
 
-behZoom :: Behavior Float -> Behavior Picture -> Behavior Picture
-behZoom factor = bscale (lift2 value time factor) (lift2 value time factor)
+behZoom :: Behavior Picture -> Behavior Picture
+behZoom = bscale (lift1 value time) (lift1 value time)
 behCircleZoom :: Behavior Picture
-behCircleZoom = behZoom (constant 5) behCircle80
+behCircleZoom = timeTransform (behZoom behCircle80) (lift2 (*) time (constant 5))
 
 
 behWiggleMotion :: Behavior Float
@@ -87,7 +87,7 @@ behRhombus50 = behRhombus (constant 50)
 
 
 behRhombusZoom :: Behavior Picture
-behRhombusZoom = behZoom (constant 5) behRhombus50
+behRhombusZoom = timeTransform (behZoom behRhombus50) (lift2 (*) time (constant 5))
 bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
 bRotate = lift2 rotate --should i add time here?
 behRotate :: Behavior Picture -> Behavior Picture

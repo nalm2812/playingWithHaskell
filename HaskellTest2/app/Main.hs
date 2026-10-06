@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at thickCircleZoom)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at arcZoom)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event (Float, a)
 
@@ -137,3 +137,12 @@ thickCircle80 :: Behavior Picture
 thickCircle80 = bThickCircle (constant 80) (constant 5)
 thickCircleZoom :: Behavior Picture
 thickCircleZoom = timeTransform (behZoom thickCircle80) (time |* constant 2)
+
+bBlank = constant Blank
+bArc :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
+bArc = lift3 arc
+arc80 :: Behavior Picture
+arc80 = bArc (constant 0) (constant 90) (constant 80)
+arcZoom :: Behavior Picture
+arcZoom = timeTransform (behZoom arc80) (time |* constant 2)
+

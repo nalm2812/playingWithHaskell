@@ -47,7 +47,7 @@ time = Behavior (\t -> (t, time))
 behZoom :: Behavior Picture -> Behavior Picture
 behZoom = bscale (lift1 value time) (lift1 value time)
 behCircleZoom :: Behavior Picture
-behCircleZoom = timeTransform (behZoom behCircle80) (time |* (constant 5))
+behCircleZoom = timeTransform (behZoom behCircle80) (time |* constant 5)
 
 
 behWiggleMotion :: Behavior Float
@@ -87,7 +87,7 @@ behRhombus50 = behRhombus (constant 50)
 
 
 behRhombusZoom :: Behavior Picture
-behRhombusZoom = timeTransform (behZoom behRhombus50) (lift2 (*) time (constant 5))
+behRhombusZoom = timeTransform (behZoom behRhombus50) (time |* constant 5)
 bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
 bRotate = lift2 rotate --should i add time here?
 behRotate :: Behavior Picture -> Behavior Picture
@@ -105,11 +105,13 @@ growingLine = growingLineFactor (constant 10)
 
 timeTransform :: Behavior a -> Behavior Float -> Behavior a
 timeTransform (Behavior b) t2 = Behavior c where c t = let(a, ab) = b (at t2 t) in (a, timeTransform ab t2)
-test = timeTransform behRhombuSpin (lift2 (*) time (constant 100))
---f where f t = let(a,ba)=b t in a
---divide :: Behavior Float -> Behavior Float
---divide a = Behavior (\t -> (t/at a t, divide a))
---multiply :: Behavior Float -> Behavior Float
---multiply a = Behavior (\t -> (t*at a t, multiply a))
+test = timeTransform behRhombuSpin (time |* constant 100)
+
 (|*) :: Behavior Float -> Behavior Float -> Behavior Float
-(|*) f1 f2 = lift2 (*) f1 f2
+(|*) = lift2 (*)
+(|/) :: Behavior Float -> Behavior Float -> Behavior Float
+(|/) = lift2 (/)
+(|+) :: Behavior Float -> Behavior Float -> Behavior Float
+(|+) = lift2 (+)
+(|-) :: Behavior Float -> Behavior Float -> Behavior Float
+(|-) = lift2 (-)

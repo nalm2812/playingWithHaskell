@@ -3,8 +3,9 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at twoWiggleNew)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at (timeTransform behRhombuSpin (time |* constant 100)))
 data Behavior a = Behavior (Float -> (a, Behavior a))
+data Event a = Event (Float, a)
 
 circleDraw :: Picture
 circleDraw = Circle 80
@@ -76,6 +77,9 @@ twoWiggle = bpictures (addPicture (behWiggleAnimationLocationSin (constant (-100
 (|:) = lift2 (:)
 twoWiggleNew :: Behavior Picture
 twoWiggleNew = bpictures (behWiggleAnimationLocationSin (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: emptyList))
+wiggleOne = behWiggleAnimationLocationSin (constant (-100)) (constant 100)
+wiggleTwo = behWiggleAnimationLocationCos (constant 100) (constant 100)
+easierWiggle = bpictures (wiggleOne |: (wiggleTwo |: emptyList))
 
 cosWiggleMotion :: Float -> Float
 cosWiggleMotion t = cos (pi*t)
@@ -88,6 +92,10 @@ behRhombus :: Behavior Float -> Behavior Picture
 rhombus :: Float -> Picture
 rhombus r = Polygon [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]
 behRhombus= lift1 rhombus
+behRhombusNoFill :: Behavior Float -> Behavior Picture
+rhombusNoFill :: Float -> Picture
+rhombusNoFill r = Line [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]
+behRhombusNoFill = lift1 rhombusNoFill
 behRhombus50 :: Behavior Picture
 behRhombus50 = behRhombus (constant 50)
 
@@ -99,7 +107,7 @@ bRotate = lift2 rotate --should i add time here?
 behRotate :: Behavior Picture -> Behavior Picture
 behRotate = bRotate time
 behRhombuSpin :: Behavior Picture
-behRhombuSpin = behRotate behRhombus50
+behRhombuSpin = behRotate (behRhombusNoFill (constant 50))
 
 
 addPointToLine :: Behavior Point -> Behavior Path -> Behavior Path

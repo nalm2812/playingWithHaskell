@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behRhombusZoom)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at twoWiggleNew)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 
 circleDraw :: Picture
@@ -70,6 +70,12 @@ emptyList = constant []
 bpictures = lift1 pictures
 twoWiggle :: Behavior Picture
 twoWiggle = bpictures (addPicture (behWiggleAnimationLocationSin (constant (-100)) (constant 100)) (addPicture (behWiggleAnimationLocationCos (constant 100) (constant 100)) emptyList))
+
+
+(|:) :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
+(|:) = lift2 (:)
+twoWiggleNew :: Behavior Picture
+twoWiggleNew = bpictures (behWiggleAnimationLocationSin (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: emptyList))
 
 cosWiggleMotion :: Float -> Float
 cosWiggleMotion t = cos (pi*t)

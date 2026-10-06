@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behSquareFillZoom)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behRectangleZoom)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event (Float, a)
 
@@ -88,10 +88,9 @@ behWiggleMotionCos = lift1 cosWiggleMotion time
 behWiggleAnimationLocationCos :: Behavior Float -> Behavior Float -> Behavior Picture
 behWiggleAnimationLocationCos x = behWiggleAnimationLocation x behWiggleMotionCos
 
+
 behRhombus :: Behavior Float -> Behavior Picture
-behRhombus n = bPolygon (lift1 (\r -> [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]) n)
-behRhombusNoFill :: Behavior Float -> Behavior Picture
-behRhombusNoFill n = bLine (lift1 (\r -> [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]) n)
+behRhombus n = bLine (lift1 (\r -> [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]) n)
 behRhombus50 :: Behavior Picture
 behRhombus50 = behRhombus (constant 50)
 
@@ -103,7 +102,7 @@ bRotate = lift2 rotate --should i add time here?
 behRotate :: Behavior Picture -> Behavior Picture
 behRotate = bRotate time
 behRhombuSpin :: Behavior Picture
-behRhombuSpin = behRotate (behRhombusNoFill (constant 50))
+behRhombuSpin = behRotate (behRhombus (constant 50))
 
 
 addPointToLine :: Behavior Point -> Behavior Path -> Behavior Path
@@ -175,3 +174,15 @@ behSquareFill80 :: Behavior Picture
 behSquareFill80 = behFillPolygon behSquare80
 behSquareFillZoom :: Behavior Picture
 behSquareFillZoom = imTired behSquareFill80
+
+bLineLoop :: Behavior Path -> Behavior Picture
+bLineLoop = lift1 lineLoop
+
+bRectanglePath :: Behavior Float -> Behavior Float -> Behavior Path
+bRectanglePath = lift2 rectanglePath
+behRectangle :: Behavior Float -> Behavior Float -> Behavior Picture
+behRectangle h l = bLineLoop (bRectanglePath h l)
+behRectangle80 :: Behavior Picture
+behRectangle80 = behRectangle (constant 80) (constant 40)
+behRectangleZoom :: Behavior Picture
+behRectangleZoom = imTired behRectangle80

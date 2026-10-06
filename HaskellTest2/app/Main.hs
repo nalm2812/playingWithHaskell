@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at (timeTransform behRhombuSpin (time |* constant 100)))
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at thickCircleZoom)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event (Float, a)
 
@@ -31,7 +31,7 @@ lift3 f (Behavior fa) (Behavior fb) (Behavior fc) = Behavior fd where fd t = let
 lift4 :: (a -> b -> c -> d -> e) -> Behavior a -> Behavior b -> Behavior c -> Behavior d -> Behavior e
 lift4 f (Behavior fa) (Behavior fb) (Behavior fc) (Behavior fd) = Behavior fe where fe t = let(a,ba) = fa t; (b,bb) = fb t; (c, bc) = fc t; (d,bd) = fd t in (f a b c d, lift4 f ba bb bc bd)
 constant :: a -> Behavior a
-constant a = Behavior ab where ab t = (a, constant a)
+constant a = Behavior ab where ab _ = (a, constant a)
 
 bscale :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 bscale = lift3 scale
@@ -129,3 +129,11 @@ test = timeTransform behRhombuSpin (time |* constant 100)
 (|+) = lift2 (+)
 (|-) :: Behavior Float -> Behavior Float -> Behavior Float
 (|-) = lift2 (-)
+
+bThickCircle :: Behavior Float -> Behavior Float -> Behavior Picture
+bThickCircle = lift2 thickCircle
+
+thickCircle80 :: Behavior Picture
+thickCircle80 = bThickCircle (constant 80) (constant 5)
+thickCircleZoom :: Behavior Picture
+thickCircleZoom = timeTransform (behZoom thickCircle80) (time |* constant 2)

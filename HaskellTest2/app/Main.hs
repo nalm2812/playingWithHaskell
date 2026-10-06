@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behSquareZoom)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behSquareFillZoom)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event (Float, a)
 
@@ -169,3 +169,9 @@ behSquareZoom :: Behavior Picture
 behSquareZoom = timeTransform (behZoom behSquare80) (time |* constant 2)
 imTired :: Behavior Picture -> Behavior Picture
 imTired p = timeTransform (behZoom p) (time |* constant 2)
+behFillPolygon :: Behavior Picture -> Behavior Picture
+behFillPolygon (Behavior p) = Behavior b where b t = let (Line a, ab) = p t in (polygon a, behFillPolygon ab)
+behSquareFill80 :: Behavior Picture
+behSquareFill80 = behFillPolygon behSquare80
+behSquareFillZoom :: Behavior Picture
+behSquareFillZoom = imTired behSquareFill80

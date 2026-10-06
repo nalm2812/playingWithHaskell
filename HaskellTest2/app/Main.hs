@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at helloWorldZoom)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behSquareZoom)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event (Float, a)
 
@@ -161,3 +161,11 @@ helloWorld = bText (constant "Hello World")
 helloWorldZoom :: Behavior Picture
 helloWorldZoom = timeTransform (behZoom helloWorld) (time |* constant 2)
 
+behSquare :: Behavior Float -> Behavior Picture
+behSquare l = bLine (lift1 (\r -> [(0,0),(0,r),(r,r),(r,0),(0,0)]) l)
+behSquare80 :: Behavior Picture
+behSquare80 = behSquare (constant 80)
+behSquareZoom :: Behavior Picture
+behSquareZoom = timeTransform (behZoom behSquare80) (time |* constant 2)
+imTired :: Behavior Picture -> Behavior Picture
+imTired p = timeTransform (behZoom p) (time |* constant 2)

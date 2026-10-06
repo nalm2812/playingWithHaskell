@@ -116,6 +116,8 @@ growingLineFactor :: Behavior Float -> Behavior Picture
 growingLineFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
 growingLine :: Behavior Picture
 growingLine = growingLineFactor (constant 10)
+bLine :: Behavior Path -> Behavior Picture
+bLine = lift1 line
 
 timeTransform :: Behavior a -> Behavior Float -> Behavior a
 timeTransform (Behavior b) t2 = Behavior c where c t = let(a, ab) = b (at t2 t) in (a, timeTransform ab t2)
@@ -145,4 +147,6 @@ arc80 :: Behavior Picture
 arc80 = bArc (constant 0) (constant 90) (constant 80)
 arcZoom :: Behavior Picture
 arcZoom = timeTransform (behZoom arc80) (time |* constant 2)
+
+
 

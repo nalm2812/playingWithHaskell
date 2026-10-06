@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at arcZoom)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at thickArcZoom)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event (Float, a)
 
@@ -146,6 +146,13 @@ arcZoom = timeTransform (behZoom arc80) (time |* constant 2)
 
 bPolygon :: Behavior Path -> Behavior Picture
 bPolygon = lift1 polygon
+
+bThickArc :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
+bThickArc = lift4 thickArc
+thickArc80 :: Behavior Picture
+thickArc80 = bThickArc (constant 0) (constant 90) (constant 90) (constant 5)
+thickArcZoom :: Behavior Picture
+thickArcZoom = timeTransform (behZoom thickArc80) (time |* constant 5)
 
 
 

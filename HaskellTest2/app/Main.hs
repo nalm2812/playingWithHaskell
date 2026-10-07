@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behCircleFilledZoom)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at testEvent)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -195,4 +195,9 @@ behCircleFilledZoom = imTired behCircleFill80
 
 occ :: Event a -> (Float, a)
 occ (Event f a) = (f,a)
-
+untilB :: Behavior a -> Event (Behavior a) -> Behavior a
+untilB b e = Behavior c where c t = let (te, b') = occ e in if t < te then (at b t, b) else (at b' t, b')--is there a way to make this better
+eventRectangle :: Event (Behavior Picture)
+eventRectangle = Event 10 behRectangleZoom
+testEvent :: Behavior Picture
+testEvent = untilB behCircleFilledZoom eventRectangle

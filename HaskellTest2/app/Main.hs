@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at testEvent)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at (execute spinningSquare))
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -38,7 +38,7 @@ behCircle :: Behavior Float -> Behavior Picture
 behCircle = lift1 Circle
 behCircle80 = constant circleDraw
 at :: Behavior a -> (Float -> a)
-at (Behavior b) = f where f t = let(a,ba)=b t in a
+at (Behavior b) = f where f t = let(a,_)=b t in a
 
 time :: Behavior Float
 time = Behavior (\t -> (t, time))
@@ -70,7 +70,8 @@ emptyList = constant []
 bpictures = lift1 pictures
 twoWiggle :: Behavior Picture
 twoWiggle = bpictures (addPicture (behWiggleAnimationLocationSin (constant (-100)) (constant 100)) (addPicture (behWiggleAnimationLocationCos (constant 100) (constant 100)) emptyList))
-
+combinePicture :: Behavior Picture -> Behavior Picture -> Behavior Picture
+combinePicture a b = bpictures (a |: (b |: emptyList))
 
 (|:) :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
 (|:) = lift2 (:)
@@ -98,10 +99,10 @@ behRhombusZoom :: Behavior Picture
 behRhombusZoom = timeTransform (behZoom behRhombus50) (time |* constant 5)
 bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
 bRotate = lift2 rotate --should i add time here?
-behRotate :: Behavior Picture -> Behavior Picture
-behRotate = bRotate time
+behSpin :: Behavior Picture -> Behavior Picture
+behSpin = bRotate time
 behRhombuSpin :: Behavior Picture
-behRhombuSpin = behRotate (behRhombus (constant 50))
+behRhombuSpin = behSpin (behRhombus (constant 50))
 
 
 addPointToLine :: Behavior Point -> Behavior Path -> Behavior Path
@@ -201,3 +202,34 @@ eventRectangle :: Event (Behavior Picture)
 eventRectangle = Event 10 behRectangleZoom
 testEvent :: Behavior Picture
 testEvent = untilB behCircleFilledZoom eventRectangle
+
+
+data Animation = Square Float | Rectangle Float Float | NewCircle Float Float
+    | Rhombus Float | Scale Float Float Animation | Translate Float Float Animation
+    |Rotate Float Animation | Combine Animation Animation | Zoom Animation | SinWiggle Float Float Animation
+    |CosWiggle Float Float Animation |Spin Animation |TimeTransform Animation String Float
+
+execute :: Animation -> Behavior Picture
+execute a = case a of
+    Square l -> behSquare (constant l)
+    Main.Rectangle h l -> behRectangle (constant h) (constant l)
+    NewCircle r t -> if t==1 then behCircle (constant r) else bThickCircle (constant r) (constant t)
+    Rhombus l -> behRhombus (constant l)
+    Main.Scale x y a -> bscale (constant x) (constant y) (execute a)
+    Main.Translate x y a -> btranslate (constant x) (constant y) (execute a)
+    Main.Rotate d a -> bRotate (constant d) (execute a)
+    Combine a b -> combinePicture (execute a) (execute b)
+    Zoom a -> behZoom (execute a)
+    SinWiggle hi lo a -> behWiggleRange (constant hi) (constant lo) behWiggleMotion (execute a)
+    CosWiggle hi lo a -> behWiggleRange (constant hi) (constant lo) behWiggleMotionCos (execute a)
+    Spin a -> behSpin (execute a)
+    TimeTransform a operator amount -> case operator of
+        "+" -> timeTransform (execute a) (time |+ constant amount)
+        "-" -> timeTransform (execute a) (time |- constant amount)
+        "*" -> timeTransform (execute a) (time |* constant amount)
+        "/" -> timeTransform (execute a) (time |/ constant amount)
+
+spinningSquare :: Animation
+spinningSquare = TimeTransform (Spin (Rhombus 80)) "*" 50
+
+

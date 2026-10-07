@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at colorTest)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at (execute anotherColorTest))
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -212,7 +212,7 @@ data Animation = Square Float | Rectangle Float Float | NewCircle Float Float
     | Rhombus Float |Text String |Blank |Arc Float Float Float Float
     | Scale Float Float Animation | Translate Float Float Animation
     |Rotate Float Animation | Combine Animation Animation | Zoom Animation | SinWiggle Float Float Animation
-    |CosWiggle Float Float Animation |Spin Animation |TimeTransform Animation String Float
+    |CosWiggle Float Float Animation |Spin Animation |TimeTransform Animation String Float |ColorAnimation Color Animation
     |Until Animation (Event Animation)
 
 execute :: Animation -> Behavior Picture
@@ -237,6 +237,7 @@ execute ani = case ani of
         "-" -> timeTransform (execute a) (time |- constant amount)
         "*" -> timeTransform (execute a) (time |* constant amount)
         "/" -> timeTransform (execute a) (time |/ constant amount)
+    ColorAnimation c a -> bColor (constant c) (execute a)
     Until a (Event f e) -> untilB (execute a) (Event f (execute e))
 
 spinningRhombus :: Animation
@@ -246,6 +247,9 @@ sinWiggle = SinWiggle 200 0 (NewCircle 80 1)
 cosWiggle = CosWiggle 200 0 (NewCircle 80 1)
 testTwoWiggle = Combine (Main.Translate (-100) 0 sinWiggle) (Main.Translate 100 0 cosWiggle)
 testThreeWiggle = Combine testTwoWiggle (Main.Translate 300 0 sinWiggle)
+threeWiggleColor = ColorAnimation red testThreeWiggle
+
+anotherColorTest = ColorAnimation violet (Combine threeWiggleColor (Main.Translate 500 0 cosWiggle))
 
 testEvent = Until spinningRhombus (Event 5 spinningSquare)
 

@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at (execute testEvent))
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at (execute testThreeWiggle))
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -135,7 +135,7 @@ thickCircle80 = bThickCircle (constant 80) (constant 5)
 thickCircleZoom :: Behavior Picture
 thickCircleZoom = timeTransform (behZoom thickCircle80) (time |* constant 2)
 
-bBlank = constant Blank
+bBlank = constant Graphics.Gloss.Blank
 bArc :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
 bArc = lift3 arc
 arc80 :: Behavior Picture
@@ -205,7 +205,7 @@ eventRectangle = Event 10 behRectangleZoom
 
 
 data Animation = Square Float | Rectangle Float Float | NewCircle Float Float
-    | Rhombus Float
+    | Rhombus Float |Text String |Blank |Arc Float Float Float Float
     | Scale Float Float Animation | Translate Float Float Animation
     |Rotate Float Animation | Combine Animation Animation | Zoom Animation | SinWiggle Float Float Animation
     |CosWiggle Float Float Animation |Spin Animation |TimeTransform Animation String Float
@@ -215,8 +215,11 @@ execute :: Animation -> Behavior Picture
 execute ani = case ani of
     Square l -> behSquare (constant l)
     Main.Rectangle h l -> behRectangle (constant h) (constant l)
-    NewCircle r t -> if t==1 then behCircle (constant r) else bThickCircle (constant r) (constant t)
+    NewCircle r t -> bThickCircle (constant r) (constant t)
     Rhombus l -> behRhombus (constant l)
+    Main.Text s -> bText (constant s)
+    Main.Blank -> bBlank
+    Main.Arc start end r t -> bThickArc (constant start) (constant end) (constant r) (constant t)
     Main.Scale x y a -> bscale (constant x) (constant y) (execute a)
     Main.Translate x y a -> btranslate (constant x) (constant y) (execute a)
     Main.Rotate d a -> bRotate (constant d) (execute a)
@@ -238,6 +241,7 @@ spinningSquare = TimeTransform (Spin (Square 80)) "*" 50
 sinWiggle = SinWiggle 200 0 (NewCircle 80 1)
 cosWiggle = CosWiggle 200 0 (NewCircle 80 1)
 testTwoWiggle = Combine (Main.Translate (-100) 0 sinWiggle) (Main.Translate 100 0 cosWiggle)
+testThreeWiggle = Combine testTwoWiggle (Main.Translate 300 0 sinWiggle)
 
 testEvent = Until spinningRhombus (Event 5 spinningSquare)
 

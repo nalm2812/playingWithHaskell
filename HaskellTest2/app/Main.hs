@@ -269,3 +269,6 @@ constEv = Event
 (.|.) :: Event a -> Event a -> Event a
 (.|.) e e' = if te<=t'e then Event te x else Event t'e x' where (te,x)=occ e; (t'e,x')=occ e'
 
+snapshot :: Event a -> Behavior b -> Event (a,b)
+snapshot e b = Event te (x, at b te) where (te,x) = occ e
+

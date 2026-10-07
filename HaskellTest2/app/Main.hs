@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at (execute testThreeWiggle))
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at colorTest)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -193,6 +193,10 @@ behCircleFill (Behavior p) = Behavior b where b t = let (Circle a, ab) = p t in 
 behCircleFill80 :: Behavior Picture
 behCircleFill80 = behCircleFill behCircle80
 behCircleFilledZoom = imTired behCircleFill80
+
+bColor :: Behavior Color -> Behavior Picture -> Behavior Picture
+bColor = lift2 color
+colorTest = bColor (constant red) easierWiggle
 
 occ :: Event a -> (Float, a)
 occ (Event f a) = (f,a)

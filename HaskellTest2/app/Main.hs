@@ -245,5 +245,12 @@ testThreeWiggle = Combine testTwoWiggle (Main.Translate 300 0 sinWiggle)
 
 testEvent = Until spinningRhombus (Event 5 spinningSquare)
 
-
+(+=>) :: Event a -> (Float -> a -> b) -> Event b
+(+=>) e f = Event te (f te x) where (te,x) = occ e
+(==>) :: Event a -> (a -> b) -> Event b
+(==>) ev g = ev +=> (\_ x -> g x)
+(*=>) :: Event a -> (Float -> b) -> Event b
+(*=>) ev h = ev +=> (\t _ -> h t)
+(-=>) :: Event a -> b -> Event b
+(-=>) ev x' = ev +=> (\_ _ -> x')
 

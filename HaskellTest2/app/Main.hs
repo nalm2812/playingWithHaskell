@@ -254,3 +254,8 @@ testEvent = Until spinningRhombus (Event 5 spinningSquare)
 (-=>) :: Event a -> b -> Event b
 (-=>) ev x' = ev +=> (\_ _ -> x')
 
+constEv :: Float -> a -> Event a
+constEv = Event
+
+
+

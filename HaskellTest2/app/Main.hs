@@ -231,49 +231,6 @@ snapshot e b = Event te (x, at b te) where (te,x) = occ e
 --joinEv :: Event Event a -> Event a
 
 
-data Animation = Square Float | Rectangle Float Float | NewCircle Float Float
-    | Rhombus Float |Text String |Blank |Arc Float Float Float Float
-    | Scale Float Float Animation | Translate Float Float Animation
-    |Rotate Float Animation | Combine Animation Animation | Zoom Animation | SinWiggle Float Float Animation
-    |CosWiggle Float Float Animation |Spin Animation |TimeTransform Animation String Float |ColorAnimation Color Animation
-    |Until Animation (Event Animation)
 
-execute :: Animation -> Behavior Picture
-execute ani = case ani of
-    Square l -> behSquare (constant l)
-    Main.Rectangle h l -> behRectangle (constant h) (constant l)
-    NewCircle r t -> bThickCircle (constant r) (constant t)
-    Rhombus l -> behRhombus (constant l)
-    Main.Text s -> bText (constant s)
-    Main.Blank -> bBlank
-    Main.Arc start end r t -> bThickArc (constant start) (constant end) (constant r) (constant t)
-    Main.Scale x y a -> bscale (constant x) (constant y) (execute a)
-    Main.Translate x y a -> btranslate (constant x) (constant y) (execute a)
-    Main.Rotate d a -> bRotate (constant d) (execute a)
-    Combine a b -> combinePicture (execute a) (execute b)
-    Zoom a -> behZoom (execute a)
-    SinWiggle hi lo a -> behWiggleRange (constant hi) (constant lo) behWiggleMotion (execute a)
-    CosWiggle hi lo a -> behWiggleRange (constant hi) (constant lo) behWiggleMotionCos (execute a)
-    Spin a -> behSpin (execute a)
-    TimeTransform a operator amount -> case operator of
-        "+" -> timeTransform (execute a) (time |+ constant amount)
-        "-" -> timeTransform (execute a) (time |- constant amount)
-        "*" -> timeTransform (execute a) (time |* constant amount)
-        "/" -> timeTransform (execute a) (time |/ constant amount)
-    ColorAnimation c a -> bColor (constant c) (execute a)
-    Until a (Event f e) -> untilB (execute a) (Event f (execute e))
-
-spinningRhombus :: Animation
-spinningRhombus = TimeTransform (Spin (Rhombus 80)) "*" 50
-spinningSquare = TimeTransform (Spin (Square 80)) "*" 50
-sinWiggle = SinWiggle 200 0 (NewCircle 80 1)
-cosWiggle = CosWiggle 200 0 (NewCircle 80 1)
-testTwoWiggle = Combine (Main.Translate (-100) 0 sinWiggle) (Main.Translate 100 0 cosWiggle)
-testThreeWiggle = Combine testTwoWiggle (Main.Translate 300 0 sinWiggle)
-threeWiggleColor = ColorAnimation red testThreeWiggle
-
-anotherColorTest = ColorAnimation violet (Combine threeWiggleColor (Main.Translate 500 0 cosWiggle))
-
-testEvent = Until spinningRhombus (Event 5 spinningSquare)
 
 

@@ -3,7 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at (execute anotherColorTest))
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behCircleZoom)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -71,7 +71,7 @@ bpictures = lift1 pictures
 twoWiggle :: Behavior Picture
 twoWiggle = bpictures (addPicture (behWiggleAnimationLocationSin (constant (-100)) (constant 100)) (addPicture (behWiggleAnimationLocationCos (constant 100) (constant 100)) emptyList))
 combinePicture :: Behavior Picture -> Behavior Picture -> Behavior Picture
-combinePicture a b = bpictures (a |: (b |: emptyList))
+combinePicture a b = bpictures (a |: (b |: emptyList))--first on only pictures and then lift
 
 (|:) :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
 (|:) = lift2 (:)
@@ -98,7 +98,7 @@ behRhombus50 = behRhombus (constant 50)
 behRhombusZoom :: Behavior Picture
 behRhombusZoom = timeTransform (behZoom behRhombus50) (time |* constant 5)
 bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
-bRotate = lift2 rotate --should i add time here?
+bRotate = lift2 rotate
 behSpin :: Behavior Picture -> Behavior Picture
 behSpin = bRotate time
 behRhombuSpin :: Behavior Picture
@@ -169,7 +169,7 @@ behSquareZoom = timeTransform (behZoom behSquare80) (time |* constant 2)
 imTired :: Behavior Picture -> Behavior Picture
 imTired p = timeTransform (behZoom p) (time |* constant 2)
 behFillPolygon :: Behavior Picture -> Behavior Picture
-behFillPolygon (Behavior p) = Behavior b where b t = let (Line a, ab) = p t in (polygon a, behFillPolygon ab)
+behFillPolygon (Behavior p) = Behavior b where b t = let (Line a, ab) = p t in (polygon a, behFillPolygon ab)--use lift instead
 behSquareFill80 :: Behavior Picture
 behSquareFill80 = behFillPolygon behSquare80
 behSquareFillZoom :: Behavior Picture
@@ -201,11 +201,34 @@ colorTest = bColor (constant red) easierWiggle
 occ :: Event a -> (Float, a)
 occ (Event f a) = (f,a)
 untilB :: Behavior a -> Event (Behavior a) -> Behavior a
-untilB b e = Behavior c where c t = let (te, b') = occ e in if t < te then (at b t, b) else (at b' t, b')--is there a way to make this better
+untilB b e = Behavior c where c t = let (te, b') = occ e in if t < te then (at b t, b) else (at b' t, b')
 eventRectangle :: Event (Behavior Picture)
 eventRectangle = Event 10 behRectangleZoom
 
+(+=>) :: Event a -> (Float -> a -> b) -> Event b
+(+=>) e f = Event te (f te x) where (te,x) = occ e
+(==>) :: Event a -> (a -> b) -> Event b
+(==>) ev g = ev +=> (\_ x -> g x)
+(*=>) :: Event a -> (Float -> b) -> Event b
+(*=>) ev h = ev +=> (\t _ -> h t)
+(-=>) :: Event a -> b -> Event b
+(-=>) ev x' = ev +=> (\_ _ -> x')
 
+constEv :: Float -> a -> Event a
+constEv = Event
+
+predicate :: Behavior Bool -> Float -> Event ()
+predicate b t = Event te () where te = let aux acc = if at b acc then acc else aux (acc+1) in aux t
+
+
+
+(.|.) :: Event a -> Event a -> Event a
+(.|.) e e' = if te<=t'e then Event te x else Event t'e x' where (te,x)=occ e; (t'e,x')=occ e'
+
+snapshot :: Event a -> Behavior b -> Event (a,b)
+snapshot e b = Event te (x, at b te) where (te,x) = occ e
+
+--joinEv :: Event Event a -> Event a
 
 
 data Animation = Square Float | Rectangle Float Float | NewCircle Float Float
@@ -253,22 +276,4 @@ anotherColorTest = ColorAnimation violet (Combine threeWiggleColor (Main.Transla
 
 testEvent = Until spinningRhombus (Event 5 spinningSquare)
 
-(+=>) :: Event a -> (Float -> a -> b) -> Event b
-(+=>) e f = Event te (f te x) where (te,x) = occ e
-(==>) :: Event a -> (a -> b) -> Event b
-(==>) ev g = ev +=> (\_ x -> g x)
-(*=>) :: Event a -> (Float -> b) -> Event b
-(*=>) ev h = ev +=> (\t _ -> h t)
-(-=>) :: Event a -> b -> Event b
-(-=>) ev x' = ev +=> (\_ _ -> x')
-
-constEv :: Float -> a -> Event a
-constEv = Event
-
---predicate :: Behavior Bool -> Float -> Event ()
-(.|.) :: Event a -> Event a -> Event a
-(.|.) e e' = if te<=t'e then Event te x else Event t'e x' where (te,x)=occ e; (t'e,x')=occ e'
-
-snapshot :: Event a -> Behavior b -> Event (a,b)
-snapshot e b = Event te (x, at b te) where (te,x) = occ e
 

@@ -3,7 +3,8 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behCircleZoom)
+main = print (sin (pi*2))
+--animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at testPredicate)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -60,6 +61,9 @@ behWiggleAnimationLocation :: Behavior Float -> Behavior Float -> Behavior Float
 behWiggleAnimationLocation x wiggle factor = btranslate x (constant 0) (behWiggleRange factor (constant 0) wiggle behCircle80)
 behWiggleAnimationLocationSin :: Behavior Float -> Behavior Float -> Behavior Picture
 behWiggleAnimationLocationSin x = behWiggleAnimationLocation x behWiggleMotion
+behWiggleTest :: Behavior Picture
+behWiggleTest = behWiggleRange (constant 100) (constant 0) behWiggleMotion behCircle80
+behWiggleTest2 = behWiggleRange (constant 100) (constant 0) behWiggleMotion behSquare80
 
 
 addPicture :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
@@ -218,8 +222,13 @@ constEv :: Float -> a -> Event a
 constEv = Event
 
 predicate :: Behavior Bool -> Float -> Event ()
-predicate b t = Event te () where te = let aux acc = if at b acc then acc else aux (acc+1) in aux t
-
+predicate b t = Event te () where te = let aux acc = if at b acc then acc else aux (acc+1) in aux t--shouldnt be +1
+behBool :: Behavior Bool
+behBool = lift1 (\t -> sin t == 1) time
+testPredicate :: Behavior Picture
+predicateEvent = predicate behBool 5 -=> behWiggleTest2
+testPrint = occ predicateEvent
+testPredicate = untilB behWiggleTest predicateEvent
 
 
 (.|.) :: Event a -> Event a -> Event a

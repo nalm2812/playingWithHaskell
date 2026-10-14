@@ -236,8 +236,8 @@ testPredicate = untilB behWiggleTest predicateEvent
 snapshot :: Event a -> Behavior b -> Event (a,b)
 snapshot e b = Event te (x, at b te) where (te,x) = occ e
 
---joinEv :: Event Event a -> Event a
-
+joinEv :: Event (Event a) -> Event a
+joinEv e = snd (occ e) 
 
 
 

@@ -3,8 +3,7 @@ module Main(main) where
 
 import Graphics.Gloss
 main :: IO ()
-main = print (sin (pi*2))
---animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at testPredicate)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at testPredicate)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -222,7 +221,7 @@ constEv :: Float -> a -> Event a
 constEv = Event
 
 predicate :: Behavior Bool -> Float -> Event ()
-predicate b t = Event te () where te = let aux acc = if at b acc then acc else aux (acc+1) in aux t--shouldnt be +1
+predicate b t = Event te () where te = let aux acc = if at b acc then acc else aux (acc+0.0001) in aux t--shouldnt be +1
 behBool :: Behavior Bool
 behBool = lift1 (\t -> sin t == 1) time
 testPredicate :: Behavior Picture

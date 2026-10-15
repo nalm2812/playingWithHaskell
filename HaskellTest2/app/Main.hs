@@ -2,6 +2,8 @@
 module Main(main) where
 
 import Graphics.Gloss
+import Data.VectorSpace
+import GHC.RTS.Flags (ParFlags(parGcThreads))
 main :: IO ()
 main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at testPredicate)
 data Behavior a = Behavior (Float -> (a, Behavior a))
@@ -237,7 +239,56 @@ snapshot :: Event a -> Behavior b -> Event (a,b)
 snapshot e b = Event te (x, at b te) where (te,x) = occ e
 
 joinEv :: Event (Event a) -> Event a
-joinEv e = snd (occ e) 
+joinEv e = snd (occ e)
+
+--data VectorSpace a = Vector
+--integral t t0 = Integral t t0
+--behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
+dt :: Float
+dt = 0.0001
+intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
+intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
+integral :: Behavior Float -> Float -> Behavior Float
+integral b t0 = Behavior (intRec b t0 0)
+--integral b a f =
+--    sum [
+--        f t * 0.0001 |
+--        t <- [a + 0.0001 / 2, a + 3*0.0001/2 .. b - 0.0001 /2]
+--        ]
+--recursive function that does this instead
+--start with t0 (Float), then sample (get a value and new behavior),
+--the new behavior is basically the recursive function so it can be further called if you want to further sample later on
+
+
+--behIntegral :: Behavior Float -> Float -> Behavior Float
+--behIntegral f t0 = lift4 integral time t0 (constant (at f)) (constant 0.0001)--this is definetly wrong
+
+
+(<=*) :: Behavior Float -> Behavior Float -> Behavior Bool
+(<=*) = lift2 (<=)
+(>=*) :: Behavior Float -> Behavior Float -> Behavior Bool
+(>=*) = lift2 (>=)
+(&&*) = lift2 (&&)
+(||*) = lift2 (||)
+pairB :: Behavior a -> Behavior a -> Behavior (a,a)
+pairB a b = Behavior c where c t = ((at a t,at b t), pairB a b)
+--bounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Float -> Behavior Float
+bounce minVal maxVal y0 v0 g t0 = path
+    where path = start t0 (y0, v0)
+
+          start t0 (y0,v0) = untilB y (doBounce +=> start)
+
+            where y = constant y0 |+ integral v t0
+                  v = constant v0 |+ integral g t0
+                  reciprocity = 0.8
+
+                  doBounce = snapshot collide (pairB y v) ==> snd ==> \ (yHit, vHit) ->
+                               (yHit,- (reciprocity * vHit))
+                  collide = predicate ((y <=* minVal &&* (v<=*constant 0)) ||*
+                                        (y >=* maxVal &&* (v>=*constant 0))) t0
+
+--bounce :: Behavior Float -> Behavior Float
+
 
 
 

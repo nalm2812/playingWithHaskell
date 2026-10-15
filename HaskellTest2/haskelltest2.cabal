@@ -16,7 +16,8 @@ executable haskelltest2
     import:           warnings
     main-is:          Main.hs
     build-depends:    base >= 4.14 && < 5,
-                      gloss >=1.13.0.1
+                      gloss >=1.13.0.1,
+                      vector-space >=0.15
     hs-source-dirs:   app
     default-language: GHC2021
 
@@ -28,4 +29,5 @@ test-suite haskelltest2-test
     main-is:          Main.hs
     build-depends:
         base >= 4.14 && < 5,
-          gloss >=1.13.0.1
+          gloss >=1.13.0.1,
+          vector-space >=0.15

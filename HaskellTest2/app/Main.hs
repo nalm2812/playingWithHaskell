@@ -5,7 +5,7 @@ import Graphics.Gloss
 import Data.VectorSpace
 import GHC.RTS.Flags (ParFlags(parGcThreads))
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at testPredicate)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behBounce)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -286,6 +286,8 @@ bounce minVal maxVal y0 v0 g t0 = path
                                (yHit,- (reciprocity * vHit))
                   collide = predicate ((y <=* minVal &&* (v<=*constant 0)) ||*
                                         (y >=* maxVal &&* (v>=*constant 0))) t0
+behBounce :: Behavior Picture
+behBounce = btranslate (constant 0) (bounce (constant 0) (constant 50) 0 10 (constant 9.8) 0) behCircle80
 
 --bounce :: Behavior Float -> Behavior Float
 

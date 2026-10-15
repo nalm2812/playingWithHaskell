@@ -2,10 +2,9 @@
 module Main(main) where
 
 import Graphics.Gloss
-import Data.VectorSpace
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at testPredicate)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behBounce)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -225,7 +224,7 @@ constEv = Event
 predicate :: Behavior Bool -> Float -> Event ()
 predicate b t = Event te () where te = let aux acc = if at b acc then acc else aux (acc+dt) in aux t
 behBool :: Behavior Bool
-behBool = lift1 (\t -> sin t == 1) time
+behBool = lift1 (\t -> sin t >= 1) time
 testPredicate :: Behavior Picture
 predicateEvent = predicate behBool 5 -=> behWiggleTest2
 testPrint = occ predicateEvent
@@ -245,9 +244,9 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.01--when one it does move but very slowly and not smooth
+dt = 0.001--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
---intRec _ ti a t | trace ("intRec " ++ " " ++ show ti ++ " " ++ show a ++ " " ++ show t) False = undefined
+--intRec _ _ a _ | trace ("intRec " ++  " " ++ show a) False = undefined
 intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti--i dont think the new behavior is being properly stored/used
 incTest = fst (intRec (constant 9.8) 0.0001 0 0.0005)
 integral :: Behavior Float -> Float -> Behavior Float
@@ -291,7 +290,7 @@ bounce minVal maxVal y0 v0 g t0 = path
                                         (y >=* maxVal &&* (v>=*constant 0))) t0
 behBounce :: Behavior Picture
 useBounce :: Behavior Float
-useBounce = bounce (constant 0) (constant 100) 100 50 (constant (-5)) 0
+useBounce = bounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
 behBounce = btranslate (constant 0) useBounce (behCircle (constant 10))
 
 --bounce :: Behavior Float -> Behavior Float

@@ -3,9 +3,9 @@ module Main(main) where
 
 import Graphics.Gloss
 import Data.VectorSpace
-import GHC.RTS.Flags (ParFlags(parGcThreads))
+import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behBounce)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at testPredicate)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -223,7 +223,7 @@ constEv :: Float -> a -> Event a
 constEv = Event
 
 predicate :: Behavior Bool -> Float -> Event ()
-predicate b t = Event te () where te = let aux acc = if at b acc then acc else aux (acc+0.0001) in aux t--shouldnt be +1
+predicate b t = Event te () where te = let aux acc = if at b acc then acc else aux (acc+dt) in aux t
 behBool :: Behavior Bool
 behBool = lift1 (\t -> sin t == 1) time
 testPredicate :: Behavior Picture
@@ -245,9 +245,11 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.0001
+dt = 0.01--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
-intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
+--intRec _ ti a t | trace ("intRec " ++ " " ++ show ti ++ " " ++ show a ++ " " ++ show t) False = undefined
+intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti--i dont think the new behavior is being properly stored/used
+incTest = fst (intRec (constant 9.8) 0.0001 0 0.0005)
 integral :: Behavior Float -> Float -> Behavior Float
 integral b t0 = Behavior (intRec b t0 0)
 --integral b a f =
@@ -273,6 +275,7 @@ integral b t0 = Behavior (intRec b t0 0)
 pairB :: Behavior a -> Behavior a -> Behavior (a,a)
 pairB a b = Behavior c where c t = ((at a t,at b t), pairB a b)
 --bounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Float -> Behavior Float
+bounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
 bounce minVal maxVal y0 v0 g t0 = path
     where path = start t0 (y0, v0)
 
@@ -287,7 +290,9 @@ bounce minVal maxVal y0 v0 g t0 = path
                   collide = predicate ((y <=* minVal &&* (v<=*constant 0)) ||*
                                         (y >=* maxVal &&* (v>=*constant 0))) t0
 behBounce :: Behavior Picture
-behBounce = btranslate (constant 0) (bounce (constant 0) (constant 50) 0 10 (constant 9.8) 0) behCircle80
+useBounce :: Behavior Float
+useBounce = bounce (constant 0) (constant 100) 100 50 (constant (-5)) 0
+behBounce = btranslate (constant 0) useBounce (behCircle (constant 10))
 
 --bounce :: Behavior Float -> Behavior Float
 

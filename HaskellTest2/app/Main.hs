@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behBounce)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at timeTransformTestSinWave)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -296,6 +296,15 @@ behBounce = btranslate (constant 0) useBounce (behCircle (constant 10))
 --bounce :: Behavior Float -> Behavior Float
 
 
-
+addPoint :: Float -> Point
+addPoint t = (t, 100*sin t)
+sinWave :: Float -> Path
+--pointAux :: Float -> Float -> [Point] -> [Point]
+--pointAux t ti acc = if ti>=t then acc else pointAux t (ti+1) ((addPoint t):acc)
+sinWave t = aux [] 0 where aux acc ti = if ti>=t then acc else aux (addPoint ti:acc) (ti+0.01)
+behSinWave :: Behavior Picture
+behSinWave = Behavior b where b t = (line (sinWave t), behSinWave)
+timeTransformTestSinWave :: Behavior Picture
+timeTransformTestSinWave = timeTransform behSinWave (time |/ constant 5)
 
 

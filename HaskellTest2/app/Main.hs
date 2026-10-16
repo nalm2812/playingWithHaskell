@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at timeTransformTestSinWave)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at largeSinWave)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -301,12 +301,17 @@ addPoint t w h= (t*w, h*sin t)
 --sinWave :: Float -> Float -> Float -> Path
 --pointAux :: Float -> Float -> [Point] -> [Point]
 --pointAux t ti acc = if ti>=t then acc else pointAux t (ti+1) ((addPoint t):acc)
-sinAux :: [Point] -> Float -> Float -> Float -> Float -> (Picture, Behavior Picture)
-sinAux acc ti w h t = if ti>=t then (line acc, Behavior (sinAux acc ti w h)) else sinAux (addPoint ti w h:acc) (ti+dt) w h t
+sinWaveRec :: [Point] -> Float -> Float -> Float -> Float -> (Picture, Behavior Picture)
+sinWaveRec acc ti w h t = if ti>=t then (line acc, Behavior (sinWaveRec acc ti w h)) else sinWaveRec (addPoint ti w h:acc) (ti+dt) w h t
 --sinWave = sinAux [] 0
 behSinWave :: Behavior Picture
-behSinWave = Behavior b where b = sinAux [] 0 10 100
+behSinWave = Behavior b where b = sinWaveRec [] 0 10 100
 timeTransformTestSinWave :: Behavior Picture
 timeTransformTestSinWave = timeTransform behSinWave (time |* constant 5)
 
-
+sinAux :: [Point] -> Float -> Float -> Path
+--sinAux _ _ _ | trace "sinAux called" False = undefined
+--sinAux acc ti t = trace ("sinAux called") (if ti>=t then acc else sinAux (addPoint ti 10 100:acc) (ti+dt) t)
+sinAux acc ti t = if ti>=t then acc else sinAux (addPoint ti 10 100:acc) (ti+dt) t
+largeSinWave :: Behavior Picture
+largeSinWave = Behavior b where b _ = (line (sinAux [] 0 (60*5)), largeSinWave)

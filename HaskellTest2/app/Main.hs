@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at behSinWave)
+main = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (at timeTransformTestSinWave)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -296,15 +296,15 @@ behBounce = btranslate (constant 0) useBounce (behCircle (constant 10))
 --bounce :: Behavior Float -> Behavior Float
 
 
-addPoint :: Float -> Point
-addPoint t = (t*10, 100*sin t)
-sinWave :: Float -> Path
+addPoint :: Float -> Float -> Float -> Point
+addPoint t w h= (t*w, h*sin t)
+sinWave :: Float -> Float -> Float -> Path
 --pointAux :: Float -> Float -> [Point] -> [Point]
 --pointAux t ti acc = if ti>=t then acc else pointAux t (ti+1) ((addPoint t):acc)
-sinWave t = aux [] 0 where aux acc ti = if ti>=t then acc else aux (addPoint ti:acc) (ti+0.01)
+sinWave t w h= aux [] 0 where aux acc ti = if ti>=t then acc else aux (addPoint ti w h:acc) (ti+dt)
 behSinWave :: Behavior Picture
-behSinWave = Behavior b where b t = (line (sinWave t), behSinWave)
+behSinWave = Behavior b where b t = (line (sinWave t 10 100), behSinWave)
 timeTransformTestSinWave :: Behavior Picture
-timeTransformTestSinWave = timeTransform behSinWave (time |/ constant 5)
+timeTransformTestSinWave = timeTransform behSinWave (time |* constant 5)
 
 

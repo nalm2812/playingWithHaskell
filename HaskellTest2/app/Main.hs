@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at massiveCircleZoom)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at timeTransformTestSinWave)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -302,7 +302,7 @@ addPoint t w h= (t*w, h*sin t)
 --pointAux :: Float -> Float -> [Point] -> [Point]
 --pointAux t ti acc = if ti>=t then acc else pointAux t (ti+1) ((addPoint t):acc)
 sinWaveRec :: [Point] -> Float -> Float -> Float -> Float -> (Picture, Behavior Picture)
-sinWaveRec acc ti w h t = if ti>=t then (line acc, Behavior (sinWaveRec acc ti w h)) else sinWaveRec (addPoint ti w h:acc) (ti+0.001) w h t
+sinWaveRec acc ti w h t = trace ("acc length: " ++ show (length acc)) (if ti>=t then (line acc, Behavior (sinWaveRec acc ti w h)) else sinWaveRec (addPoint ti w h:acc) (ti+0.01) w h t)
 --sinWave = sinAux [] 0
 behSinWave :: Behavior Picture
 behSinWave = Behavior b where b = sinWaveRec [] 0 10 100

@@ -302,7 +302,7 @@ addPoint t w h= (t*w, h*sin t)
 --pointAux :: Float -> Float -> [Point] -> [Point]
 --pointAux t ti acc = if ti>=t then acc else pointAux t (ti+1) ((addPoint t):acc)
 sinWaveRec :: [Point] -> Float -> Float -> Float -> Float -> (Picture, Behavior Picture)
-sinWaveRec acc ti w h t = if ti>=t then (line acc, Behavior (sinWaveRec acc ti w h)) else sinWaveRec (addPoint ti w h:acc) (ti+dt) w h t
+sinWaveRec acc ti w h t = if ti>=t then (line acc, Behavior (sinWaveRec acc ti w h)) else sinWaveRec (addPoint ti w h:acc) (ti+0.1) w h t
 --sinWave = sinAux [] 0
 behSinWave :: Behavior Picture
 behSinWave = Behavior b where b = sinWaveRec [] 0 10 100
@@ -315,3 +315,5 @@ sinAux :: [Point] -> Float -> Float -> Path
 sinAux acc ti t = if ti>=t then acc else sinAux (addPoint ti 10 100:acc) (ti+dt) t
 largeSinWave :: Behavior Picture
 largeSinWave = Behavior b where b _ = (line (sinAux [] 0 (60*5)), largeSinWave)
+
+

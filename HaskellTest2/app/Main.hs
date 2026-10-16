@@ -301,7 +301,9 @@ addPoint t w h= (t*w, h*sin t)
 sinWave :: Float -> Float -> Float -> Path
 --pointAux :: Float -> Float -> [Point] -> [Point]
 --pointAux t ti acc = if ti>=t then acc else pointAux t (ti+1) ((addPoint t):acc)
-sinWave t w h= aux [] 0 where aux acc ti = if ti>=t then acc else aux (addPoint ti w h:acc) (ti+dt)
+sinAux :: [Point] -> Float -> Float -> Float -> Float -> Path
+sinAux acc ti t w h = if ti>=t then acc else sinAux (addPoint ti w h:acc) (ti+dt) t w h
+sinWave = sinAux [] 0
 behSinWave :: Behavior Picture
 behSinWave = Behavior b where b t = (line (sinWave t 10 100), behSinWave)
 timeTransformTestSinWave :: Behavior Picture

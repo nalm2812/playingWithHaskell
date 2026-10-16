@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at largeSinWave)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at testPredicate)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -244,7 +244,7 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.001--when one it does move but very slowly and not smooth
+dt = 0.01--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
 --intRec _ _ a _ | trace ("intRec " ++  " " ++ show a) False = undefined
 intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti--i dont think the new behavior is being properly stored/used
@@ -291,7 +291,7 @@ bounce minVal maxVal y0 v0 g t0 = path
 behBounce :: Behavior Picture
 useBounce :: Behavior Float
 useBounce = bounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
-behBounce = btranslate (constant 0) useBounce (behCircle (constant 10))
+behBounce = btranslate (constant 0) useBounce (behCircle (constant 50))
 
 --bounce :: Behavior Float -> Behavior Float
 
@@ -302,7 +302,7 @@ addPoint t w h= (t*w, h*sin t)
 --pointAux :: Float -> Float -> [Point] -> [Point]
 --pointAux t ti acc = if ti>=t then acc else pointAux t (ti+1) ((addPoint t):acc)
 sinWaveRec :: [Point] -> Float -> Float -> Float -> Float -> (Picture, Behavior Picture)
-sinWaveRec acc ti w h t = if ti>=t then (line acc, Behavior (sinWaveRec acc ti w h)) else sinWaveRec (addPoint ti w h:acc) (ti+0.1) w h t
+sinWaveRec acc ti w h t = if ti>=t then (line acc, Behavior (sinWaveRec acc ti w h)) else sinWaveRec (addPoint ti w h:acc) (ti+0.01) w h t
 --sinWave = sinAux [] 0
 behSinWave :: Behavior Picture
 behSinWave = Behavior b where b = sinWaveRec [] 0 10 100
@@ -312,8 +312,10 @@ timeTransformTestSinWave = timeTransform behSinWave (time |* constant 5)
 sinAux :: [Point] -> Float -> Float -> Path
 --sinAux _ _ _ | trace "sinAux called" False = undefined
 --sinAux acc ti t = trace ("sinAux called") (if ti>=t then acc else sinAux (addPoint ti 10 100:acc) (ti+dt) t)
-sinAux acc ti t = if ti>=t then acc else sinAux (addPoint ti 10 100:acc) (ti+dt) t
+sinAux acc ti t = if ti>=t then acc else sinAux (addPoint ti 10 10:acc) (ti+dt) t
 largeSinWave :: Behavior Picture
 largeSinWave = Behavior b where b _ = (line (sinAux [] 0 (60*5)), largeSinWave)
+
+
 
 

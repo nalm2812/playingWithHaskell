@@ -319,10 +319,11 @@ lift33 f (Behavior2 fa) (Behavior2 fb) (Behavior2 fc)= Behavior2 fd where fd t =
 at2 (Behavior2 b) = b
 untilB2 b e = Behavior2 c where c t = let (te, b') = occ e in if t < te then at2 b t else at2 b' t
 (|++) = lift22 (+)
+(<=**) :: Behavior2 Float -> Behavior2 Float -> Behavior2 Bool
 (<=**) = lift22 (<=)
 (>=**) = lift22 (>=)
-(&&**) = lift2 (&&)
-(||**) = lift2 (||)
+(&&**) = lift22 (&&)
+(||**) = lift22 (||)
 
 pairB2 a b = Behavior2 c where c t = (at2 a t,at2 b t)
 snapshot2 e b = Event te (x, at2 b te) where (te,x) = occ e

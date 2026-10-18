@@ -39,8 +39,8 @@ behCircle :: Behavior Float -> Behavior Picture
 behCircle = lift1 Circle
 behCircle80 = constant circleDraw
 at :: Behavior a -> (Float -> a)
---at (Behavior b) = f where f t = let(a,_)=b t in a
-at (Behavior b) = f where f t = (let(_,Behavior c)=b t in fst (c t))
+at (Behavior b) = f where f t = let(a,_)=b t in a
+--at (Behavior b) = f where f t = (let(_,Behavior c)=b t in fst (c t))
 
 atTest :: Float -> Picture
 atTest = at behSinWave
@@ -247,21 +247,18 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 1--when one it does move but very slowly and not smooth
+dt = 0.01--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
-intRec _ t0 a t | trace ("intRec t:" ++  " " ++ show t ++ " t0: " ++ show t0) False = undefined
+--intRec _ t0 a t | trace ("intRec t:" ++  " " ++ show t ++ " t0: " ++ show t0) False = undefined
 intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti--i dont think the new behavior is being properly stored/used
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
 data Behavior2 a = Behavior2 (Float -> a)
-badIntRec2 :: Behavior2 Float -> Float -> Float -> Float -> Float
-badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + (a'*dt)) t where a' = b ti
 incTest = fst (intRec (constant 9.8) 0.0001 0 0.0005)
 integral :: Behavior Float -> Float -> Behavior Float
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
 --integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined
 integral b t0 = Behavior (intRec b t0 0)
-integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
 --Behavior c where c t = (badIntRec b t0 0 t, integral b t0)
 --Behavior (intRec b t0 0)
 --integral b a f =
@@ -311,6 +308,9 @@ behBounce = btranslate (constant 0) useBounce (behCircle (constant 50))
 
 
 --bad bounce stuff
+badIntRec2 :: Behavior2 Float -> Float -> Float -> Float -> Float
+badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + (a'*dt)) t where a' = b ti
+integral2 b t0 = (Behavior2 (badIntRec2 b t0 0))
 constant2 a = Behavior2 b where b t = a
 lift11 f (Behavior2 fa) = Behavior2 fb where fb t = let a=fa t in f a
 lift22 f (Behavior2 fa) (Behavior2 fb) = Behavior2 fc where fc t = let a=fa t;b=fb t in f a b
@@ -348,6 +348,12 @@ useBounce2 = bounce2 (constant2 0) (constant2 100) 100 50 (constant2 (-9.8)) 0
 btranslate2 = lift33 translate
 behCircle2 = lift11 Circle
 behBounce2 = btranslate2 (constant2 0) useBounce2 (behCircle2 (constant2 50))
+
+
+
+
+
+--sinWave
 
 addPoint :: Float -> Float -> Float -> Point
 addPoint t w h= (t*w, h*sin t)

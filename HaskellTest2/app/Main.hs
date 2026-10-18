@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at2 behBounce2)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -344,6 +344,10 @@ bounce2 minVal maxVal y0 v0 g t0 = path
                   collide = predicate2 ((y <=** minVal &&** (v<=**constant2 0)) ||**
                                         (y >=** maxVal &&** (v>=**constant2 0))) t0
 
+useBounce2 = bounce2 (constant2 0) (constant2 100) 100 50 (constant2 (-9.8)) 0
+btranslate2 = lift33 translate
+behCircle2 = lift11 Circle
+behBounce2 = btranslate2 (constant2 0) useBounce2 (behCircle2 (constant2 50))
 
 addPoint :: Float -> Float -> Float -> Point
 addPoint t w h= (t*w, h*sin t)

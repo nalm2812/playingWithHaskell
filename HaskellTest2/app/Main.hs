@@ -315,6 +315,9 @@ constant2 a = Behavior2 b where b t = a
 lift11 f (Behavior2 fa) = Behavior2 fb where fb t = let a=fa t in f a
 lift22 f (Behavior2 fa) (Behavior2 fb) = Behavior2 fc where fc t = let a=fa t;b=fb t in f a b
 lift33 f (Behavior2 fa) (Behavior2 fb) (Behavior2 fc)= Behavior2 fd where fd t = let a=fa t;b=fb t; c=fc t in f a b c
+
+at2 (Behavior2 b) = b
+untilB2 b e = Behavior2 c where c t = let (te, b') = occ e in if t < te then at2 b t else at2 b' t
 bounce2 minVal maxVal y0 v0 g t0 = path
     where path = start t0 (y0, v0)
 

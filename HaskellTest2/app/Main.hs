@@ -318,13 +318,19 @@ lift33 f (Behavior2 fa) (Behavior2 fb) (Behavior2 fc)= Behavior2 fd where fd t =
 
 at2 (Behavior2 b) = b
 untilB2 b e = Behavior2 c where c t = let (te, b') = occ e in if t < te then at2 b t else at2 b' t
+(|++) = lift22 (+)
+(<=**) = lift22 (<=)
+(>=**) = lift22 (>=)
+(&&**) = lift2 (&&)
+(||**) = lift2 (||)
+
 bounce2 minVal maxVal y0 v0 g t0 = path
     where path = start t0 (y0, v0)
 
-          start t0 (y0,v0) = untilB y (doBounce +=> start)
+          start t0 (y0,v0) = untilB2 y (doBounce +=> start)
 
-            where y = constant y0 |+ integral v t0
-                  v = constant v0 |+ integral g t0
+            where y = constant2 y0 |+ integral2 v t0
+                  v = constant2 v0 |+ integral2 g t0
                   reciprocity = 0.8
 
                   doBounce = snapshot collide (pairB y v) ==> snd ==> \ (yHit, vHit) ->

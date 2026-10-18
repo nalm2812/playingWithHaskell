@@ -324,19 +324,24 @@ untilB2 b e = Behavior2 c where c t = let (te, b') = occ e in if t < te then at2
 (&&**) = lift2 (&&)
 (||**) = lift2 (||)
 
+pairB2 a b = Behavior2 c where c t = (at2 a t,at2 b t)
+snapshot2 e b = Event te (x, at2 b te) where (te,x) = occ e
+predicate2 b t = Event te () where te = let aux acc = if at2 b acc then acc else aux (acc+dt) in aux t
+
+
 bounce2 minVal maxVal y0 v0 g t0 = path
     where path = start t0 (y0, v0)
 
           start t0 (y0,v0) = untilB2 y (doBounce +=> start)
 
-            where y = constant2 y0 |+ integral2 v t0
-                  v = constant2 v0 |+ integral2 g t0
+            where y = constant2 y0 |++ integral2 v t0
+                  v = constant2 v0 |++ integral2 g t0
                   reciprocity = 0.8
 
-                  doBounce = snapshot collide (pairB y v) ==> snd ==> \ (yHit, vHit) ->
+                  doBounce = snapshot2 collide (pairB2 y v) ==> snd ==> \ (yHit, vHit) ->
                                (yHit,- (reciprocity * vHit))
-                  collide = predicate ((y <=* minVal &&* (v<=*constant 0)) ||*
-                                        (y >=* maxVal &&* (v>=*constant 0))) t0
+                  collide = predicate2 ((y <=** minVal &&** (v<=**constant2 0)) ||**
+                                        (y >=** maxVal &&** (v>=**constant2 0))) t0
 
 
 addPoint :: Float -> Float -> Float -> Point

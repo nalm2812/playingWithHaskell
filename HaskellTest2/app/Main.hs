@@ -303,8 +303,6 @@ bounce minVal maxVal y0 v0 g t0 = path
                                         (y >=* maxVal &&* (v>=*constant 0))) t0
 
 
-
-
 behBounce :: Behavior Picture
 useBounce :: Behavior Float
 useBounce = bounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
@@ -312,7 +310,24 @@ behBounce = btranslate (constant 0) useBounce (behCircle (constant 50))
 
 
 
---bounce :: Behavior Float -> Behavior Float
+--bad bounce stuff
+constant2 a = Behavior2 b where b t = a
+lift11 f (Behavior2 fa) = Behavior2 fb where fb t = let a=fa t in f a
+lift22 f (Behavior2 fa) (Behavior2 fb) = Behavior2 fc where fc t = let a=fa t;b=fb t in f a b
+lift33 f (Behavior2 fa) (Behavior2 fb) (Behavior2 fc)= Behavior2 fd where fd t = let a=fa t;b=fb t; c=fc t in f a b c
+bounce2 minVal maxVal y0 v0 g t0 = path
+    where path = start t0 (y0, v0)
+
+          start t0 (y0,v0) = untilB y (doBounce +=> start)
+
+            where y = constant y0 |+ integral v t0
+                  v = constant v0 |+ integral g t0
+                  reciprocity = 0.8
+
+                  doBounce = snapshot collide (pairB y v) ==> snd ==> \ (yHit, vHit) ->
+                               (yHit,- (reciprocity * vHit))
+                  collide = predicate ((y <=* minVal &&* (v<=*constant 0)) ||*
+                                        (y >=* maxVal &&* (v>=*constant 0))) t0
 
 
 addPoint :: Float -> Float -> Float -> Point

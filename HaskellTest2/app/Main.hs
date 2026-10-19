@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounceSquare)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -25,7 +25,7 @@ wiggleRange hi lo t = translate 0 (lo + (hi-lo) * (wiggle t+1)/2) circleDraw
 lift1 :: (a -> b) -> Behavior a -> Behavior b
 lift1 f (Behavior fa) = Behavior fb where fb t = let(a,ba) = fa t in (f a, lift1 f ba)
 lift2 :: (a -> b -> c) -> Behavior a -> Behavior b -> Behavior c
-lift2 f (Behavior fa) (Behavior fb) = Behavior fc where fc t =  (let(a,ba) = fa t; (b,bb) = fb t in (f a b, lift2 f ba bb))
+lift2 f (Behavior fa) (Behavior fb) = Behavior fc where fc t =  let(a,ba) = fa t; (b,bb) = fb t in (f a b, lift2 f ba bb)
 lift3 :: (a -> b -> c -> d) -> Behavior a -> Behavior b -> Behavior c -> Behavior d
 lift3 f (Behavior fa) (Behavior fb) (Behavior fc) = Behavior fd where fd t = let(a,ba) = fa t; (b,bb) = fb t; (c, bc) = fc t in (f a b c, lift3 f ba bb bc)
 lift4 :: (a -> b -> c -> d -> e) -> Behavior a -> Behavior b -> Behavior c -> Behavior d -> Behavior e
@@ -40,7 +40,7 @@ behCircle = lift1 Circle
 behCircle80 = constant circleDraw
 at :: Behavior a -> (Float -> a)
 --at (Behavior b) = f where f t = let(a,_)=b t in a
-at (Behavior b) = f where f t = (let(_,Behavior c)=b t in fst (c t))
+at (Behavior b) = f where f t = let(_,Behavior c)=b t in fst (c t)
 
 atTest :: Float -> Picture
 atTest = at behSinWave
@@ -250,7 +250,7 @@ dt :: Float
 dt = 0.01--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
 --intRec _ t0 a t | trace ("intRec t:" ++  " " ++ show t ++ " t0: " ++ show t0) False = undefined
-intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti--i dont think the new behavior is being properly stored/used
+intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
 data Behavior2 a = Behavior2 (Float -> a)

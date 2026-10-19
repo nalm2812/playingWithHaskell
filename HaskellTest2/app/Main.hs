@@ -205,6 +205,8 @@ bColor :: Behavior Color -> Behavior Picture -> Behavior Picture
 bColor = lift2 color
 colorTest = bColor (constant red) easierWiggle
 
+
+
 occ :: Event a -> (Float, a)
 occ (Event f a) = (f,a)
 untilB :: Behavior a -> Event (Behavior a) -> Behavior a
@@ -333,7 +335,7 @@ horizontalBounce min max r v start = let properStart = uhhhh min start in btrans
 testHorizontalBounce :: Behavior Picture
 testHorizontalBounce = horizontalBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 horizontalSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-horizontalSquare min max r = btranslate (constant (-1) |* (r |+ (min |+ (r |* constant (-1))))) (min |+ (r |* constant (-1))) (behSquare (squareLengthForBounce min max r))
+horizontalSquare min max r = btranslate (constant (-1) |* min) (min |- r) (behSquare (squareLengthForBounce min max r))
 
 --bounce :: Behavior Float -> Behavior Float
 

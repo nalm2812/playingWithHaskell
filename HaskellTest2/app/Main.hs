@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounceSquare)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at testHorizontalBounce)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -326,6 +326,15 @@ properSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior P
 properSquare min max r = btranslate (constant (-1) |* (squareLengthForBounce min max r |/ constant 2)) (min |+ (r |* constant (-1))) (behSquare (squareLengthForBounce min max r))
 testProperBounce :: Behavior Picture
 testProperBounce = properBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
+horizontalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
+horizontalBounceWithSquare min max r v start = combinePicture (horizontalBounce min max r v start) (horizontalSquare min max r)
+horizontalBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
+horizontalBounce min max r v start = let properStart = uhhhh min start in btranslate (bounce min max properStart v (constant 0) 0) (bounce min max properStart v (constant (-9.8)) 0) (behCircle r)
+testHorizontalBounce :: Behavior Picture
+testHorizontalBounce = horizontalBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
+horizontalSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
+horizontalSquare min max r = btranslate (constant (-1) |* (r |+ (min |+ (r |* constant (-1))))) (min |+ (r |* constant (-1))) (behSquare (squareLengthForBounce min max r))
+
 --bounce :: Behavior Float -> Behavior Float
 
 

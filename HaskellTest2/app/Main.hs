@@ -314,7 +314,10 @@ squareAround = btranslate (constant (-100)) (constant (-50)) (behSquare (constan
 behBounceSquare :: Behavior Picture
 behBounceSquare = combinePicture squareAround behBounce
 properBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-properBounce min max r v start = btranslate (constant 0) (bounce min max start v (constant (-9.8)) 0) (behCircle r)
+iGiveUp :: Behavior Float -> Float
+iGiveUp min = at min 0
+uhhhh min = max (iGiveUp min)
+properBounce min max r v start = let properStart = uhhhh min start in btranslate (constant 0) (bounce min max properStart v (constant (-9.8)) 0) (behCircle r)
 properBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 properBounceWithSquare min max r v start= combinePicture (properBounce min max r v start) (properSquare min max r)
 squareLengthForBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float

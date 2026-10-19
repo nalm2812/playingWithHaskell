@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at testProperBounce)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at timeTransformTestSinWave)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -205,8 +205,6 @@ bColor :: Behavior Color -> Behavior Picture -> Behavior Picture
 bColor = lift2 color
 colorTest = bColor (constant red) easierWiggle
 
-
-
 occ :: Event a -> (Float, a)
 occ (Event f a) = (f,a)
 untilB :: Behavior a -> Event (Behavior a) -> Behavior a
@@ -340,25 +338,25 @@ horizontalSquare min max r = btranslate (constant (-1) |* min) (min |- r) (behSq
 --bounce :: Behavior Float -> Behavior Float
 
 
-addPoint :: Float -> Float -> Float -> Point
-addPoint t w h= (t*w, h*sin t)
+addPoint :: Float -> Float -> Float -> (Float -> Float) -> Point
+addPoint t w h f= (t*w, h*f t)
 --sinWave :: Float -> Float -> Float -> Path
 --pointAux :: Float -> Float -> [Point] -> [Point]
 --pointAux t ti acc = if ti>=t then acc else pointAux t (ti+1) ((addPoint t):acc)
-sinWaveRec :: [Point] -> Float -> Float -> Float -> Float -> (Picture, Behavior Picture)
-sinWaveRec acc ti w h t = trace ("acc length: " ++ show (length acc)) (if ti>=t then (line acc, Behavior (sinWaveRec acc ti w h)) else sinWaveRec (addPoint ti w h:acc) (ti+0.01) w h t)
+sinWaveRec :: [Point] -> Float -> Float -> Float -> (Float -> Float) -> Float -> (Picture, Behavior Picture)
+sinWaveRec acc ti w h f t = trace ("acc length: " ++ show (length acc)) (if ti>=t then (line acc, Behavior (sinWaveRec acc ti w h f)) else sinWaveRec (addPoint ti w h f:acc) (ti+0.01) w h f t)
 --sinWave = sinAux [] 0
 behSinWave :: Behavior Picture
-behSinWave = Behavior b where b= sinWaveRec [] 0 10 100
+behSinWave = Behavior b where b= sinWaveRec [] 0 10 100 sin
 timeTransformTestSinWave :: Behavior Picture
 timeTransformTestSinWave = timeTransform behSinWave (time |* constant 5)
 
-sinAux :: [Point] -> Float -> Float -> Path
+sinAux :: [Point] -> Float -> (Float -> Float) -> Float -> Path
 --sinAux _ _ _ | trace "sinAux called" False = undefined
 --sinAux acc ti t = trace ("sinAux called") (if ti>=t then acc else sinAux (addPoint ti 10 100:acc) (ti+dt) t)
-sinAux acc ti t = if ti>=t then acc else sinAux (addPoint ti 10 100:acc) (ti+dt) t
+sinAux acc ti f t = if ti>=t then acc else sinAux (addPoint ti 10 100 f:acc) (ti+dt) f t
 largeSinWave :: Behavior Picture
-largeSinWave = Behavior b where b _ = (line (sinAux [] 0 (60*5)), largeSinWave)
+largeSinWave = Behavior b where b _ = (line (sinAux [] 0 sin (60*5)), largeSinWave)
 
 aLotOfCircles :: Behavior Picture
 aLotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux"( if counter==101 then acc else aux (combinePicture acc (btranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))

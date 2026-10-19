@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at testProperBounce)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounceSquare)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -308,9 +308,9 @@ bounce minVal maxVal y0 v0 g t0 = path
 behBounce :: Behavior Picture
 useBounce :: Behavior Float
 useBounce = bounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
-behBounce = btranslate (constant 0) useBounce (behCircle (constant 50))
+behBounce = btranslate (bounce (constant 0) (constant 100) 100 50 (constant 0) 0) useBounce (behCircle (constant 50))
 squareAround :: Behavior Picture
-squareAround = btranslate (constant (-100)) (constant (-50)) (behSquare (constant 200))
+squareAround = btranslate (constant (-50)) (constant (-50)) (behSquare (constant 200))
 behBounceSquare :: Behavior Picture
 behBounceSquare = combinePicture squareAround behBounce
 properBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture

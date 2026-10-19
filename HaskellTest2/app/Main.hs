@@ -317,10 +317,12 @@ properBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  
 properBounce min max r v start = btranslate (constant 0) (bounce min max start v (constant (-9.8)) 0) (behCircle r)
 properBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 properBounceWithSquare min max r v start= combinePicture (properBounce min max r v start) (properSquare min max r)
+squareLengthForBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
+squareLengthForBounce min max r = (max |- min) |+ (r |* constant 2)
 properSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-properSquare min max r = btranslate (r |* constant (-2)) (r |* constant (-1)) (behSquare ((max |- min)|+ (r |* constant 2)))
+properSquare min max r = btranslate (constant (-1) |* (squareLengthForBounce min max r |/ constant 2)) (min |+ (r |* constant (-1))) (behSquare (squareLengthForBounce min max r))
 testProperBounce :: Behavior Picture
-testProperBounce = properBounceWithSquare (constant 0) (constant 100) (constant 50) 50 0
+testProperBounce = properBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 --bounce :: Behavior Float -> Behavior Float
 
 

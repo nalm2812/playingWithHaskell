@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounceSquare)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -247,9 +247,9 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 1--when one it does move but very slowly and not smooth
+dt = 0.01--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
-intRec _ t0 a t | trace ("intRec t:" ++  " " ++ show t ++ " t0: " ++ show t0) False = undefined
+--intRec _ t0 a t | trace ("intRec t:" ++  " " ++ show t ++ " t0: " ++ show t0) False = undefined
 intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti--i dont think the new behavior is being properly stored/used
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
@@ -309,7 +309,10 @@ behBounce :: Behavior Picture
 useBounce :: Behavior Float
 useBounce = bounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
 behBounce = btranslate (constant 0) useBounce (behCircle (constant 50))
-
+squareAround :: Behavior Picture
+squareAround = btranslate (constant (-75)) (constant (-50)) (behSquare (constant 200))
+behBounceSquare :: Behavior Picture
+behBounceSquare = combinePicture squareAround behBounce
 
 
 --bounce :: Behavior Float -> Behavior Float

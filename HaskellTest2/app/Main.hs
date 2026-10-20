@@ -375,11 +375,14 @@ timeText =  Behavior b where b t = ("t = " ++ show t, timeText)
 behTimeText :: Behavior Picture
 behTimeText = bText timeText
 
+circleAux counter = btranslate (constant (counter*30)) (constant 0) (behZoom (behCircle (constant 67)))
+
 manyCirclesAux :: Float -> Behavior Picture -> Behavior Picture
-manyCirclesAux counter acc = if counter==11 then acc else manyCirclesAux (counter+1) (combinePicture acc (timeTransform (behZoom (behCircle (constant 67))) (time |* constant counter)))
+manyCirclesAux counter acc = if counter==20 then acc else manyCirclesAux (counter+1) (combinePicture acc (timeTransform (circleAux counter) (time |+ constant (counter+10))))
+--(btranslate (constant (counter*10)) (constant 0) (behZoom (behCircle (constant 67))) (time |+ constant counter)))))
 
 manyCirclesIrregularZoom :: Behavior Picture
-manyCirclesIrregularZoom = manyCirclesAux 2 (behZoom (behCircle (constant 67)))
+manyCirclesIrregularZoom = manyCirclesAux 1 (behZoom (bColor (constant red) (behCircle (constant 67))))
 
 
 

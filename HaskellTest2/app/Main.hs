@@ -5,8 +5,9 @@ import Graphics.Gloss
 import Debug.Trace
 import Data.Fixed
 
+
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at testForever)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at canIGoHome)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -289,10 +290,9 @@ pairB :: Behavior a -> Behavior a -> Behavior (a,a)
 pairB a b = Behavior c where c t = ((at a t,at b t), pairB a b)
 --bounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Float -> Behavior Float
 bounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
-bounce minVal maxVal y0 v0 g t0 = path
-    where path = start t0 (y0, v0)
+bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-          start t0 (y0,v0) = y `untilB` (doBounce +=> start)
+        start t0 (y0,v0) = y `untilB` (doBounce +=> start)
 
             where y = constant y0 |+ integral v t0
                   v = constant v0 |+ integral g t0
@@ -368,7 +368,7 @@ largeSinWave :: Behavior Picture
 largeSinWave = Behavior b where b _ = (line (waveAux [] 0 sin (60*5)), largeSinWave)
 
 aLotOfCircles :: Behavior Picture
-aLotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux"( if counter==101 then acc else aux (combinePicture acc (btranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))
+aLotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux" ( if counter==101 then acc else aux (combinePicture acc (btranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))
 massiveCircleZoom :: Behavior Picture
 massiveCircleZoom = behZoom aLotOfCircles
 
@@ -418,6 +418,25 @@ foreverAux :: Behavior Picture -> Float -> Float -> Behavior Picture
 foreverAux b t amount= if t==amount then b `untilB` aCircleLater b t else foreverAux (b `untilB` aCircleLater b t) (t+1) amount
 testForever :: Behavior Picture
 testForever = foreverAux behCircleZoom 1 20
+
+betterCircleLater :: Behavior Picture -> Float -> Behavior Picture
+betterCircleLater b counter = combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom)
+
+forever :: Float -> Behavior Picture -> Behavior Picture
+forever t0 b = start t0 b where
+        start t0 b = b `untilB` (ughhh +=> start)
+            --where ughhh = let (_,(_,beh)) = occ (predicateTired `snapshot` b) where predicateTired = predicate boolForCircle t0 in Event t0 (betterCircleLater beh (t0/5))
+            where ughhh = predicateTired -=> betterCircleLater b (t0/5) where predicateTired = predicate boolForCircle t0
+
+canIGoHome :: Behavior Picture
+canIGoHome = forever 0 behCircleZoom
+
+{-addCircle :: Picture -> [Picture] -> [Picture]
+addCircle p acc = p:acc
+idkAnymoreAux :: Behavior Picture -> (Picture -> Float) -> Float -> Float -> (Picture, Behavior Picture)
+idkAnymoreAux (Behavior b) acc counter t = if counter==t then (acc t, Behavior (idkAnymoreAux (Behavior b) acc counter)) else let (a', b') = b counter in idkAnymoreAux b'  -}
+
+
 
 
 

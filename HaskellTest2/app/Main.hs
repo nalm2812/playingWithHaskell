@@ -6,7 +6,7 @@ import Debug.Trace
 import Data.Fixed
 
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at homeeee)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at testForever)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -406,11 +406,18 @@ boolForCircle = lift1 (\t -> round t `mod` 5==0) time
 --zoomNoBeh t = scale value value (Circle 70) where value = abs (5*sin (t/5 ))
 --ugh :: Picture -> Float -> Float -> (Float -> Picture, Behavior Picture)
 --ugh acc counter t= if t==counter then (acc, Behavior (ugh acc counter)) else ugh (addCircle
-aCircleLater :: Event (Behavior Picture)
-aCircleLater = predicate boolForCircle 1 -=> combinePicture behCircleZoom (btranslate (constant 100) (constant 0) behCircleZoom)
+aCircleLater :: Behavior Picture -> Float -> Event (Behavior Picture)
+aCircleLater b counter = predicate boolForCircle ((counter-1)*5+1) -=> combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom)
 homeeee :: Behavior Picture
-homeeee = behCircleZoom `untilB` aCircleLater
-
+homeeee = behCircleZoom `untilB` aCircleLater behCircleZoom 1
+again :: Behavior Picture
+again = homeeee `untilB` aCircleLater homeeee 2
+--forever :: Behavior Picture
+--foreverAux :: Behavior Picture -> Float -> (Picture, Behavior Picture)
+foreverAux :: Behavior Picture -> Float -> Float -> Behavior Picture
+foreverAux b t amount= if t==amount then b `untilB` aCircleLater b t else foreverAux (b `untilB` aCircleLater b t) (t+1) amount
+testForever :: Behavior Picture
+testForever = foreverAux behCircleZoom 1 20
 
 
 

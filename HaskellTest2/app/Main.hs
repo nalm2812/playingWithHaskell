@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at testHorizontalBounce)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at manyCirclesIrregularZoom)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -369,6 +369,44 @@ aLotOfCircles :: Behavior Picture
 aLotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux"( if counter==101 then acc else aux (combinePicture acc (btranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))
 massiveCircleZoom :: Behavior Picture
 massiveCircleZoom = behZoom aLotOfCircles
+
+timeText :: Behavior String
+timeText =  Behavior b where b t = ("t = " ++ show t, timeText)
+behTimeText :: Behavior Picture
+behTimeText = bText timeText
+
+manyCirclesAux :: Float -> Behavior Picture -> Behavior Picture
+manyCirclesAux counter acc = if counter==11 then acc else manyCirclesAux (counter+1) (combinePicture acc (timeTransform (behZoom (behCircle (constant 67))) (time |* constant counter)))
+
+manyCirclesIrregularZoom :: Behavior Picture
+manyCirclesIrregularZoom = manyCirclesAux 2 (behZoom (behCircle (constant 67)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 --behPentagon :: Behavior Float -> Behavior Picture
 --behPentagon l = bLineLoop (lift1 (\r -> [(0,0),(0,r),(r,r),(r,0),(0,0)]) l)

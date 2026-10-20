@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at testHorizontalBounce)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -325,6 +325,8 @@ properSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior P
 properSquare min max r = btranslate (squareLengthForBounce min max r |/ constant (-2)) (min |- r) (behSquare (squareLengthForBounce min max r))
 testProperBounce :: Behavior Picture
 testProperBounce = properBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
+
+
 horizontalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 horizontalBounceWithSquare min max r v start = combinePicture (horizontalBounce min max r v start) (horizontalSquare min max r)
 horizontalBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
@@ -335,6 +337,10 @@ horizontalSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavi
 horizontalSquare min max r = btranslate (constant (-1) |* min) (min |- r) (behSquare (squareLengthForBounce min max r))
 noLagBounce :: Behavior Picture
 noLagBounce = properBounceWithSquare (constant 0) (constant 100) (constant 50) 50 100
+
+smallBall :: Behavior Picture
+smallBall = horizontalBounce (constant 0) (constant 300) (constant 10) 40 42
+
 
 --bounce :: Behavior Float -> Behavior Float
 
@@ -364,3 +370,5 @@ aLotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux"( if counte
 massiveCircleZoom :: Behavior Picture
 massiveCircleZoom = behZoom aLotOfCircles
 
+--behPentagon :: Behavior Float -> Behavior Picture
+--behPentagon l = bLineLoop (lift1 (\r -> [(0,0),(0,r),(r,r),(r,0),(0,0)]) l)

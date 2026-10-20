@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at manyCirclesIrregularZoom)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at testHorizontalBounce)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -290,7 +290,7 @@ bounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -
 bounce minVal maxVal y0 v0 g t0 = path
     where path = start t0 (y0, v0)
 
-          start t0 (y0,v0) = untilB y (doBounce +=> start)
+          start t0 (y0,v0) = y `untilB` (doBounce +=> start)
 
             where y = constant y0 |+ integral v t0
                   v = constant v0 |+ integral g t0
@@ -384,7 +384,8 @@ manyCirclesAux counter acc = if counter==20 then acc else manyCirclesAux (counte
 manyCirclesIrregularZoom :: Behavior Picture
 manyCirclesIrregularZoom = manyCirclesAux 1 (behZoom (bColor (constant red) (behCircle (constant 67))))
 
-
+--boolForCircle :: Behavior Bool
+--boolForCircle = lift1 (\t -> (rem t 5)==0) time
 
 
 

@@ -4,7 +4,7 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at timeTransformTestSinWave)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at testHorizontalBounce)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -167,8 +167,10 @@ helloWorld = bText (constant "Hello World")
 helloWorldZoom :: Behavior Picture
 helloWorldZoom = timeTransform (behZoom helloWorld) (time |* constant 2)
 
+bLineLoop :: Behavior Path -> Behavior Picture
+bLineLoop = lift1 lineLoop
 behSquare :: Behavior Float -> Behavior Picture
-behSquare l = bLine (lift1 (\r -> [(0,0),(0,r),(r,r),(r,0),(0,0)]) l)
+behSquare l = bLineLoop (lift1 (\r -> [(0,0),(0,r),(r,r),(r,0),(0,0)]) l)
 behSquare80 :: Behavior Picture
 behSquare80 = behSquare (constant 80)
 behSquareZoom :: Behavior Picture
@@ -181,9 +183,6 @@ behSquareFill80 :: Behavior Picture
 behSquareFill80 = behFillPolygon behSquare80
 behSquareFillZoom :: Behavior Picture
 behSquareFillZoom = imTired behSquareFill80
-
-bLineLoop :: Behavior Path -> Behavior Picture
-bLineLoop = lift1 lineLoop
 
 bRectanglePath :: Behavior Float -> Behavior Float -> Behavior Path
 bRectanglePath = lift2 rectanglePath

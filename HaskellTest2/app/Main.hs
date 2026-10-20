@@ -3,8 +3,10 @@ module Main(main) where
 
 import Graphics.Gloss
 import Debug.Trace
+import Data.Fixed
+
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at testHorizontalBounce)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at homeeee)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -51,7 +53,7 @@ time = Behavior (\t -> (t, time))
 behZoom :: Behavior Picture -> Behavior Picture
 behZoom = bscale (lift1 value time) (lift1 value time)
 behCircleZoom :: Behavior Picture
-behCircleZoom = timeTransform (behZoom behCircle80) (time |* constant 5)
+behCircleZoom = behZoom behCircle80
 
 
 behWiggleMotion :: Behavior Float
@@ -384,11 +386,30 @@ manyCirclesAux counter acc = if counter==20 then acc else manyCirclesAux (counte
 manyCirclesIrregularZoom :: Behavior Picture
 manyCirclesIrregularZoom = manyCirclesAux 1 (behZoom (bColor (constant red) (behCircle (constant 67))))
 
---boolForCircle :: Behavior Bool
---boolForCircle = lift1 (\t -> (rem t 5)==0) time
+boolForCircle :: Behavior Bool
+boolForCircle = lift1 (\t -> round t `mod` 5==0) time
 
+--zoomNoBeh :: Float -> Picture
 
+--addCircle :: Float -> Behavior Picture
+--addCircle c = aux behCircleZoom 1 where aux acc counter = if counter==c then acc else aux (combinePicture acc behCircleZoom) (counter+1)
 
+--iWantSleep :: Float -> Behavior Picture
+--iWantSleep c = Behavior b where b t = aux behCircleZoom 1 where aux acc counter = if counter==c then (acc, Behavior (aux acc)) else aux
+--cries = Behavior b where b t = ((at (addCircle t) t), addCircle)
+--addingCircleEvent :: Behavior Picture
+--addingCircleEvent =  predicate boolForCircle 0 -=> cries
+
+--addCircle :: Picture -> Picture -> Picture
+--addCircle c acc = pictures [c,acc]
+--zoomNoBeh :: Float -> Picture
+--zoomNoBeh t = scale value value (Circle 70) where value = abs (5*sin (t/5 ))
+--ugh :: Picture -> Float -> Float -> (Float -> Picture, Behavior Picture)
+--ugh acc counter t= if t==counter then (acc, Behavior (ugh acc counter)) else ugh (addCircle
+aCircleLater :: Event (Behavior Picture)
+aCircleLater = predicate boolForCircle 1 -=> combinePicture behCircleZoom (btranslate (constant 100) (constant 0) behCircleZoom)
+homeeee :: Behavior Picture
+homeeee = behCircleZoom `untilB` aCircleLater
 
 
 

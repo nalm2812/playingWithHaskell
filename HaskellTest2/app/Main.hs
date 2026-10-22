@@ -7,7 +7,7 @@ import Data.Fixed
 
 
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at canIGoHome)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -294,7 +294,7 @@ bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
         start t0 (y0,v0) = y `untilB` (doBounce +=> start)
 
-            where y = constant y0 |+ integral v t0
+            where y = constant y0 |+ integral v t0--calculate the behavior picture inside here
                   v = constant v0 |+ integral g t0
                   reciprocity = 0.8
 
@@ -422,14 +422,15 @@ testForever = foreverAux behCircleZoom 1 20
 betterCircleLater :: Behavior Picture -> Float -> Behavior Picture
 betterCircleLater b counter = combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom)
 
-forever :: Float -> Behavior Picture -> Behavior Picture
+--forever :: Float -> Behavior (Behavior Picture) -> Behavior Picture
 forever t0 b = start t0 b where
         start t0 b = b `untilB` (ughhh +=> start)
-            --where ughhh = let (_,(_,beh)) = occ (predicateTired `snapshot` b) where predicateTired = predicate boolForCircle t0 in Event t0 (betterCircleLater beh (t0/5))
-            where ughhh = predicateTired -=> betterCircleLater b (t0/5) where predicateTired = predicate boolForCircle t0
+            where ughhh = predicateTired `snapshot` b ==> snd ==> (\beh -> betterCircleLater beh (t0/5)) where predicateTired = predicate boolForCircle t0
+            --where ughhh =
+            --predicateTired -=> betterCircleLater b (t0/5) where predicateTired = predicate boolForCircle t0
 
-canIGoHome :: Behavior Picture
-canIGoHome = forever 0 behCircleZoom
+--canIGoHome :: Behavior Picture
+--canIGoHome = forever 0 behCircleZoom
 
 {-addCircle :: Picture -> [Picture] -> [Picture]
 addCircle p acc = p:acc

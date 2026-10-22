@@ -43,7 +43,7 @@ behCircle = lift1 Circle
 behCircle80 = constant circleDraw
 at :: Behavior a -> (Float -> a)
 --at (Behavior b) = f where f t = let(a,_)=b t in a
-at (Behavior b) = f where f t = let(_,Behavior c)=b t in fst (c t)
+at (Behavior b) t = fst (b t)
 
 atTest :: Float -> Picture
 atTest = at behSinWave
@@ -388,6 +388,10 @@ manyCirclesIrregularZoom = manyCirclesAux 1 (behZoom (bColor (constant red) (beh
 
 boolForCircle :: Behavior Bool
 boolForCircle = lift1 (\t -> round t `mod` 5==0) time
+--problem comes from when you run start again its still true, so its forever true
+--relative time instead of absolute time
+
+
 
 --zoomNoBeh :: Float -> Picture
 
@@ -423,9 +427,9 @@ betterCircleLater :: Behavior Picture -> Float -> Behavior Picture
 betterCircleLater b counter = combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom)
 
 --forever :: Float -> Behavior (Behavior Picture) -> Behavior Picture
-forever t0 b = start t0 b where
+{-forever t0 b = start t0 b where
         start t0 b = b `untilB` (ughhh +=> start)
-            where ughhh = predicateTired `snapshot` b ==> snd ==> (\beh -> betterCircleLater beh (t0/5)) where predicateTired = predicate boolForCircle t0
+            where ughhh = predicateTired `snapshot` b ==> snd ==> (\beh -> betterCircleLater beh (t0/5)) where predicateTired = predicate boolForCircle t0-}
             --where ughhh =
             --predicateTired -=> betterCircleLater b (t0/5) where predicateTired = predicate boolForCircle t0
 

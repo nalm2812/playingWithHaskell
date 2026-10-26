@@ -4,10 +4,15 @@ module Main(main) where
 import Graphics.Gloss
 import Debug.Trace
 import Data.Fixed
+import Graphics.Gloss.Data.Controller
+import Graphics.Gloss.Interface.IO.Animate
+
 
 
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
+main = animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white (sample behBounce) controllerSetRedraw
+--animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
+sample b t = pure (at b t)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture

@@ -6,13 +6,26 @@ import Debug.Trace
 import Data.Fixed
 import Graphics.Gloss.Data.Controller
 import Graphics.Gloss.Interface.IO.Animate
+import Data.IORef (newIORef, IORef, writeIORef, readIORef)
 
 
 
 main :: IO ()
-main = animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white (sample behBounce) controllerSetRedraw
+main = do
+        usedBehavior <- newIORef behBounce
+
+        let sample t = do           beh <- readIORef usedBehavior
+                                    let extract (Behavior b) = b
+                                    let use = extract beh t
+                                    writeIORef usedBehavior (snd use)
+                                    return (fst use)
+        animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white (sample) controllerSetRedraw
 --animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
-sample b t = pure (at b t)
+--idkAnymore = do usedBehavior <- newIORef behBounce
+
+
+        --usedBehavior >>= (\huh -> at huh t)
+
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -254,15 +267,15 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.01--when one it does move but very slowly and not smooth
+dt = 0.001--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
 --intRec _ t0 a t | trace ("intRec t:" ++  " " ++ show t ++ " t0: " ++ show t0) False = undefined
-intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
+intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
-badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
+badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 data Behavior2 a = Behavior2 (Float -> a)
 badIntRec2 :: Behavior2 Float -> Float -> Float -> Float -> Float
-badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + (a'*dt)) t where a' = b ti
+badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + a'*dt) t where a' = b ti
 incTest = fst (intRec (constant 9.8) 0.0001 0 0.0005)
 integral :: Behavior Float -> Float -> Behavior Float
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
@@ -358,7 +371,7 @@ addPoint t w h f= (t*w, h*f t)
 --pointAux :: Float -> Float -> [Point] -> [Point]
 --pointAux t ti acc = if ti>=t then acc else pointAux t (ti+1) ((addPoint t):acc)
 waveRec :: [Point] -> Float -> Float -> Float -> (Float -> Float) -> Float -> (Picture, Behavior Picture)
-waveRec acc ti w h f t = trace ("acc length: " ++ show (length acc)) (if ti>=t then (line acc, Behavior (waveRec acc ti w h f)) else waveRec (addPoint ti w h f:acc) (ti+0.01) w h f t)
+waveRec acc ti w h f t = if ti>=t then (line acc, Behavior (waveRec acc ti w h f)) else waveRec (addPoint ti w h f:acc) (ti+0.01) w h f t
 --sinWave = sinAux [] 0
 behSinWave :: Behavior Picture
 behSinWave = Behavior b where b= waveRec [] 0 10 100 sin

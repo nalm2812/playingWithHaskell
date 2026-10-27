@@ -252,12 +252,12 @@ dt :: Float
 dt = 0.01--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
 --intRec _ t0 a t | trace ("intRec t:" ++  " " ++ show t ++ " t0: " ++ show t0) False = undefined
-intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
+intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
-badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
+badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 data Behavior2 a = Behavior2 (Float -> a)
 badIntRec2 :: Behavior2 Float -> Float -> Float -> Float -> Float
-badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + (a'*dt)) t where a' = b ti
+badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + a'*dt) t where a' = b ti
 incTest = fst (intRec (constant 9.8) 0.0001 0 0.0005)
 integral :: Behavior Float -> Float -> Behavior Float
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
@@ -386,8 +386,8 @@ manyCirclesAux counter acc = if counter==20 then acc else manyCirclesAux (counte
 manyCirclesIrregularZoom :: Behavior Picture
 manyCirclesIrregularZoom = manyCirclesAux 1 (behZoom (bColor (constant red) (behCircle (constant 67))))
 
-boolForCircle :: Behavior Bool
-boolForCircle = lift1 (\t -> round t `mod` 5==0) time
+boolForCircle :: Behavior Bool -> Behavior Bool
+boolForCircle = lift2 (\t bool -> bool && round t `mod` 10==0 || round t `mod` 10==0) time
 
 --zoomNoBeh :: Float -> Picture
 
@@ -407,7 +407,7 @@ boolForCircle = lift1 (\t -> round t `mod` 5==0) time
 --ugh :: Picture -> Float -> Float -> (Float -> Picture, Behavior Picture)
 --ugh acc counter t= if t==counter then (acc, Behavior (ugh acc counter)) else ugh (addCircle
 aCircleLater :: Behavior Picture -> Float -> Event (Behavior Picture)
-aCircleLater b counter = predicate boolForCircle ((counter-1)*5+1) -=> combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom)
+aCircleLater b counter = predicate (boolForCircle (constant False)) ((counter-1)*5+1) -=> combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom)
 homeeee :: Behavior Picture
 homeeee = behCircleZoom `untilB` aCircleLater behCircleZoom 1
 again :: Behavior Picture
@@ -419,14 +419,14 @@ foreverAux b t amount= if t==amount then b `untilB` aCircleLater b t else foreve
 testForever :: Behavior Picture
 testForever = foreverAux behCircleZoom 1 20
 
-betterCircleLater :: Behavior Picture -> Float -> Behavior Picture
-betterCircleLater b counter = combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom)
+betterCircleLater :: Behavior Picture -> Float -> Behavior Bool -> (Behavior Picture, Behavior Bool)
+betterCircleLater b counter bool = (combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom), lift1 (not . at bool) time)
 
 forever :: Float -> Behavior Picture -> Behavior Picture
-forever t0 b = start t0 b where
-        start t0 b = b `untilB` (ughhh +=> start)
-            --where ughhh = let (_,(_,beh)) = occ (predicateTired `snapshot` b) where predicateTired = predicate boolForCircle t0 in Event t0 (betterCircleLater beh (t0/5))
-            where ughhh = predicateTired -=> betterCircleLater b (t0/5) where predicateTired = predicate boolForCircle t0
+forever t0 b = start t0 (b, constant False) where
+        start t0 (b, bool) = b `untilB` (ughhh +=> start) where
+            ughhh = predicateTired -=> betterCircleLater b (t0/5) bool where predicateTired = predicate (boolForCircle bool) t0
+                    --where predicateTired = predicate (boolForCircle bool) t0
 
 canIGoHome :: Behavior Picture
 canIGoHome = forever 1 behCircleZoom

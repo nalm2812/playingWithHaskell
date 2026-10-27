@@ -421,8 +421,8 @@ testForever = foreverAux behCircleZoom 1 20
 
 
 betterCircleLater :: Behavior Picture -> Float -> Behavior Bool -> (Behavior Picture, Behavior Bool)
-betterCircleLater _ c _ | trace ("c: " ++ show c) False = undefined
-betterCircleLater b counter bool = (combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom), lift1 (not . at bool) time)
+--betterCircleLater _ c _ | trace ("c: " ++ show c) False = undefined
+betterCircleLater b counter bool = (combinePicture b (btranslate (constant ((counter+1)*100)) (constant 0) behCircleZoom), lift1 (not . at bool) time)
 
 forever :: Float -> Behavior Picture -> Behavior Picture
 forever t0 b = start t0 (b, constant False) where

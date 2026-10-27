@@ -429,7 +429,7 @@ forever t0 b = start t0 b where
             where ughhh = predicateTired -=> betterCircleLater b (t0/5) where predicateTired = predicate boolForCircle t0
 
 canIGoHome :: Behavior Picture
-canIGoHome = forever 0 behCircleZoom
+canIGoHome = forever 1 behCircleZoom
 
 {-addCircle :: Picture -> [Picture] -> [Picture]
 addCircle p acc = p:acc

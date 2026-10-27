@@ -387,7 +387,7 @@ manyCirclesIrregularZoom :: Behavior Picture
 manyCirclesIrregularZoom = manyCirclesAux 1 (behZoom (bColor (constant red) (behCircle (constant 67))))
 
 boolForCircle :: Behavior Bool -> Behavior Bool
-boolForCircle = lift2 (\t bool -> bool && round t `mod` 10==0 || round t `mod` 10==0) time
+boolForCircle = lift2 (\t bool -> bool && round t `mod` 10==0 || not bool && round t `mod` 5==0 && not (round t `mod` 10==0)) time
 
 --zoomNoBeh :: Float -> Picture
 

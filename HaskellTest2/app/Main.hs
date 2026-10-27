@@ -419,13 +419,15 @@ foreverAux b t amount= if t==amount then b `untilB` aCircleLater b t else foreve
 testForever :: Behavior Picture
 testForever = foreverAux behCircleZoom 1 20
 
+
 betterCircleLater :: Behavior Picture -> Float -> Behavior Bool -> (Behavior Picture, Behavior Bool)
+betterCircleLater _ c _ | trace ("c: " ++ show c) False = undefined
 betterCircleLater b counter bool = (combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom), lift1 (not . at bool) time)
 
 forever :: Float -> Behavior Picture -> Behavior Picture
 forever t0 b = start t0 (b, constant False) where
         start t0 (b, bool) = b `untilB` (ughhh +=> start) where
-            ughhh = predicateTired -=> betterCircleLater b (t0/5) bool where predicateTired = predicate (boolForCircle bool) t0
+            ughhh = predicateTired -=> betterCircleLater b (fromIntegral (ceiling t0)/5) bool where predicateTired = predicate (boolForCircle bool) t0
                     --where predicateTired = predicate (boolForCircle bool) t0
 
 canIGoHome :: Behavior Picture

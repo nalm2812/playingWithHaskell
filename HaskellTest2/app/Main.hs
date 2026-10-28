@@ -387,7 +387,7 @@ manyCirclesIrregularZoom :: Behavior Picture
 manyCirclesIrregularZoom = manyCirclesAux 1 (behZoom (bColor (constant red) (behCircle (constant 67))))
 
 boolForCircle :: Behavior Bool -> Behavior Bool
-boolForCircle = lift2 (\t bool -> not (t==0) && (bool && round t `mod` 10==0 || not bool && round t `mod` 5==0 && not (round t `mod` 10==0))) time
+boolForCircle = lift2 (\t bool -> (t /= 0) && (bool && round t `mod` 10==0 || not bool && ((round t `mod` 10) /= 0) && round t `mod` 5==0)) time
 
 --zoomNoBeh :: Float -> Picture
 
@@ -432,6 +432,17 @@ forever t0 b = start t0 (b, constant False) where
 
 canIGoHome :: Behavior Picture
 canIGoHome = forever 0 behCircleZoom
+
+foreverPrettier :: Float -> Behavior Picture -> Behavior Picture
+foreverPrettier t0 b = start t0 (b, constant False) where
+        start t0 (b, bool) = b `untilB` (ughhh +=> start) where
+            ughhh = predicateTired -=> betterCircleLater b (fromIntegral (ceiling t0)/5) bool where predicateTired = predicate (weirdCircleBool bool) t0
+
+forEverPrettierTest :: Behavior Picture
+forEverPrettierTest = foreverPrettier 0 behCircleZoom
+
+weirdCircleBool :: Behavior Bool -> Behavior Bool
+weirdCircleBool = lift2 (\t bool -> (t /= 0) && (abs (sin t) ==0) && (bool && round t `mod` 10==0 || not bool && ((round t `mod` 10) /= 0) && round t `mod` 5==0)) time
 
 {-addCircle :: Picture -> [Picture] -> [Picture]
 addCircle p acc = p:acc

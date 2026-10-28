@@ -422,7 +422,11 @@ testForever = foreverAux behCircleZoom 1 20
 
 betterCircleLater :: Behavior Picture -> Float -> Behavior Bool -> (Behavior Picture, Behavior Bool)
 --betterCircleLater _ c _ | trace ("c: " ++ show c) False = undefined
-betterCircleLater b counter bool = (combinePicture b (btranslate (constant ((counter+1)*100)) (constant 0) behCircleZoom), lift1 (not . at bool) time)
+betterCircleLater b counter bool= (combinePicture b (btranslate (constant ((counter+1)*100)) (constant 0) behCircleZoom), lift1 (not . at bool) time)
+
+betterCircleLater2 :: Behavior Picture -> Float -> Behavior Bool -> Behavior Bool ->(Behavior Picture, Behavior Bool, Behavior Bool)
+betterCircleLater2 b counter bool bool2= (combinePicture b (btranslate (constant ((counter+1)*100)) (constant 0) behCircleZoom), lift1 (not . at bool) time, constant False)
+
 
 forever :: Float -> Behavior Picture -> Behavior Picture
 forever t0 b = start t0 (b, constant False) where
@@ -435,23 +439,39 @@ canIGoHome = forever 0 behCircleZoom
 
 
 foreverTrue :: Behavior Bool
-foreverTrue = constant True
-foreverPredicate = predicate foreverTrue
+foreverTrue = constant False
+foreverPredicate = predicate foreverTrue 0
 
-sinBool :: Behavior Bool
-sinBool = lift1 (\t -> abs (sin t)==0) time
+idknextthing = foreverPredicate -=> behRectangleZoom
+constantFalse = behCircleZoom `untilB` idknextthing
+
+--the float in predicate being whenever predicateTired is fulfilled
+
+
+
+sinBool :: Behavior Bool -> Behavior Bool
+sinBool = lift2 whyyyyyy time
+whyyyyyy :: Float -> Bool -> Bool
+whyyyyyy t b = t /= 0 && ((b && abs (sin t) <=0.1 && round t `mod`5 /= 0) || (not b && round t `mod` 5==0))
+
 
 foreverPrettier :: Float -> Behavior Picture -> Behavior Picture
-foreverPrettier t0 b = start t0 (b, constant False) where
+foreverPrettier t0 b = start t0 (b, constant True) where
         start t0 (b, bool) = b `untilB` (ughhh +=> start) where
-            ughhh = lastTime -=> betterCircleLater b (fromIntegral (ceiling t0)/5) bool where
-                predicateTired = predicate (boolForCircle bool) t0
-                sinPredicate = predicate sinBool t0
+            --usedBool =  bool2 `untilB` (predicateTired -=> constant True)
+            predicateTired = predicate (boolForCircle bool) t0
+            ughhh = drink -=> betterCircleLater b (fromIntegral (ceiling t0)/5) bool where
                 lastTime = predicate (maybeThis bool) t0
+                chai = predicate (matcha bool t0) t0
+                --flatWhite = predicate (sinBool usedBool) t0
+                espresso = predicateTired -=> sinBool (constant True)
+                cappuchino = constant False `untilB` espresso
+                coffee = predicate cappuchino t0
+                drink = predicate (sinBool bool) t0
 
-thisDoesntCompile t0 b bool = foreverPredicate t0 -=> betterCircleLater b (fromIntegral (ceiling t0)/5) bool
-idkAnymore t0 b bool = foreverPredicate t0 -=> thisDoesntCompile t0 b bool
-ughhhhhhhhhhh t0 bool = foreverPredicate t0 -=>predicateTired where predicateTired = predicate (boolForCircle bool) t0
+cortado t0 bool = predicateTired -=> foreverTrue where predicateTired = predicate (boolForCircle bool) t0
+
+matcha bool t0 = boolForCircle bool `untilB` cortado t0 bool
 
 maybeThis :: Behavior Bool -> Behavior Bool
 maybeThis bool = boolForCircle bool &&* foreverTrue
@@ -461,6 +481,9 @@ forEverPrettierTest = foreverPrettier 0 behCircleZoom
 
 weirdCircleBool :: Behavior Bool -> Behavior Bool
 weirdCircleBool = lift2 (\t bool -> t /= 0 && abs (sin t) ==0 && (bool && round t `mod` 10==0 || not bool && (round t `mod` 10) /= 0 && round t `mod` 5==0)) time
+
+
+
 
 {-addCircle :: Picture -> [Picture] -> [Picture]
 addCircle p acc = p:acc

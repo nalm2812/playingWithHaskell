@@ -7,7 +7,7 @@ import Data.Fixed
 
 
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at canIGoHome)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at forEverPrettierTest)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -433,10 +433,19 @@ forever t0 b = start t0 (b, constant False) where
 canIGoHome :: Behavior Picture
 canIGoHome = forever 0 behCircleZoom
 
+
+foreverTrue :: Behavior Bool
+foreverTrue = constant True
+
+sinBool :: Behavior Bool
+sinBool = lift1 (\t -> abs (sin t)==0) time
+
 foreverPrettier :: Float -> Behavior Picture -> Behavior Picture
 foreverPrettier t0 b = start t0 (b, constant False) where
         start t0 (b, bool) = b `untilB` (ughhh +=> start) where
-            ughhh = predicateTired -=> betterCircleLater b (fromIntegral (ceiling t0)/5) bool where predicateTired = predicate (weirdCircleBool bool) t0
+            ughhh = predicateTired -=> sinPredicate -=> betterCircleLater b (fromIntegral (ceiling t0)/5) bool where
+                predicateTired = predicate (boolForCircle bool) t0
+                sinPredicate = predicate sinBool t0
 
 forEverPrettierTest :: Behavior Picture
 forEverPrettierTest = foreverPrettier 0 behCircleZoom

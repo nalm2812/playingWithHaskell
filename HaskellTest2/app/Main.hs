@@ -387,7 +387,7 @@ manyCirclesIrregularZoom :: Behavior Picture
 manyCirclesIrregularZoom = manyCirclesAux 1 (behZoom (bColor (constant red) (behCircle (constant 67))))
 
 boolForCircle :: Behavior Bool -> Behavior Bool
-boolForCircle = lift2 (\t bool -> (t /= 0) && (bool && round t `mod` 10==0 || not bool && ((round t `mod` 10) /= 0) && round t `mod` 5==0)) time
+boolForCircle = lift2 (\t bool -> t /= 0 && (bool && round t `mod` 10==0 || not bool && (round t `mod` 10) /= 0 && round t `mod` 5==0)) time
 
 --zoomNoBeh :: Float -> Picture
 
@@ -436,6 +436,7 @@ canIGoHome = forever 0 behCircleZoom
 
 foreverTrue :: Behavior Bool
 foreverTrue = constant True
+foreverPredicate = predicate foreverTrue
 
 sinBool :: Behavior Bool
 sinBool = lift1 (\t -> abs (sin t)==0) time
@@ -443,15 +444,23 @@ sinBool = lift1 (\t -> abs (sin t)==0) time
 foreverPrettier :: Float -> Behavior Picture -> Behavior Picture
 foreverPrettier t0 b = start t0 (b, constant False) where
         start t0 (b, bool) = b `untilB` (ughhh +=> start) where
-            ughhh = predicateTired -=> sinPredicate -=> betterCircleLater b (fromIntegral (ceiling t0)/5) bool where
+            ughhh = lastTime -=> betterCircleLater b (fromIntegral (ceiling t0)/5) bool where
                 predicateTired = predicate (boolForCircle bool) t0
                 sinPredicate = predicate sinBool t0
+                lastTime = predicate (maybeThis bool) t0
+
+thisDoesntCompile t0 b bool = foreverPredicate t0 -=> betterCircleLater b (fromIntegral (ceiling t0)/5) bool
+idkAnymore t0 b bool = foreverPredicate t0 -=> thisDoesntCompile t0 b bool
+ughhhhhhhhhhh t0 bool = foreverPredicate t0 -=>predicateTired where predicateTired = predicate (boolForCircle bool) t0
+
+maybeThis :: Behavior Bool -> Behavior Bool
+maybeThis bool = boolForCircle bool &&* foreverTrue
 
 forEverPrettierTest :: Behavior Picture
 forEverPrettierTest = foreverPrettier 0 behCircleZoom
 
 weirdCircleBool :: Behavior Bool -> Behavior Bool
-weirdCircleBool = lift2 (\t bool -> (t /= 0) && (abs (sin t) ==0) && (bool && round t `mod` 10==0 || not bool && ((round t `mod` 10) /= 0) && round t `mod` 5==0)) time
+weirdCircleBool = lift2 (\t bool -> t /= 0 && abs (sin t) ==0 && (bool && round t `mod` 10==0 || not bool && (round t `mod` 10) /= 0 && round t `mod` 5==0)) time
 
 {-addCircle :: Picture -> [Picture] -> [Picture]
 addCircle p acc = p:acc

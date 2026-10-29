@@ -14,7 +14,7 @@ import Graphics.Gloss.Data.ViewPort
 
 main :: IO ()
 main = do
-        usedBehavior <- newIORef behSimplerBounce
+        usedBehavior <- newIORef behBounceFloat
         let extract (Behavior b) = b
         let sample t = do
                         beh <- readIORef usedBehavior
@@ -344,6 +344,16 @@ useBounce = bounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
 behBounce = btranslate (constant 0) useBounce (behCircle (constant 50))
 useBounceSimple = simplerBounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
 behSimplerBounce = btranslate (constant 0) useBounceSimple (behCircle (constant 50))
+
+
+bFloatToString :: Behavior Float -> Behavior String
+bFloatToString (Behavior b) = Behavior c where c t = let (ab, bb) = b t in (show ab, bFloatToString bb)
+
+
+behBounceFloat = bText (bFloatToString useBounce)
+
+
+
 squareAround :: Behavior Picture
 squareAround = btranslate (constant (-50)) (constant (-50)) (behSquare (constant 200))
 behBounceSquare :: Behavior Picture

@@ -14,7 +14,7 @@ import Graphics.Gloss.Data.ViewPort
 
 main :: IO ()
 main = do
-        usedBehavior <- newIORef behBounce
+        usedBehavior <- newIORef sampleTest
         let extract (Behavior b) = b
         let sample t = do
                         beh <- readIORef usedBehavior
@@ -459,6 +459,15 @@ idkAnymoreAux (Behavior b) acc counter t = if counter==t then (acc t, Behavior (
 
 
 
+simpleBeh = Behavior b1
+   where
+   b2 t =(t - 5, Behavior b2)
+   b1 t | t < 5 = (t, (Behavior b1))
+        | otherwise = (0, Behavior b2)
+
+
+sampleTest :: Behavior Picture
+sampleTest = btranslate (simpleBeh|*constant 100) (constant 0) behCircle80
 
 
 

@@ -14,7 +14,7 @@ import Graphics.Gloss.Data.ViewPort
 
 main :: IO ()
 main = do
-        usedBehavior <- newIORef sampleTest
+        usedBehavior <- newIORef behSimplerBounce
         let extract (Behavior b) = b
         let sample t = do
                         beh <- readIORef usedBehavior
@@ -279,6 +279,7 @@ integral :: Behavior Float -> Float -> Behavior Float
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
 --integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined
 integral b t0 = Behavior (intRec b t0 0)
+badIntegral b t0 = Behavior b1 where b1 t = (badIntRec b t0 0 t, badIntegral b t0)
 integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
 --Behavior c where c t = (badIntRec b t0 0 t, integral b t0)
 --Behavior (intRec b t0 0)
@@ -303,7 +304,7 @@ integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
 (&&*) = lift2 (&&)
 (||*) = lift2 (||)
 pairB :: Behavior a -> Behavior a -> Behavior (a,a)
-pairB a b = Behavior c where c t = ((at a t,at b t), pairB a b)
+pairB (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba, bb) = b t in  ((aa,ba), pairB ab bb)
 --bounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Float -> Behavior Float
 bounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
 bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
@@ -320,12 +321,29 @@ bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                                         (y >=* maxVal &&* (v>=*constant 0))) t0
 
 
+--distanceTraveled (Behavior v) = Behavior b where b t =  (fst (v t) * t, distanceTraveled (Behavior v))
+behAbs = lift1 abs
+simplerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
+
+                      start t0 (y0,v0) = y `untilB` (doBounce +=> start)
+
+                          where y = constant y0 |+ (v |* behAbs (time |- constant t0))--calculate the behavior picture inside here
+                                v = constant v0
+                                reciprocity = 0.8
+
+                                doBounce = snapshot collide (pairB y v) ==> snd ==> \ (yHit, vHit) ->
+                                             (yHit,- (reciprocity * vHit))
+                                collide = predicate ((y <=* minVal &&* (v<=*constant 0)) ||*
+                                                      (y >=* maxVal &&* (v>=*constant 0))) t0
+
 
 
 behBounce :: Behavior Picture
 useBounce :: Behavior Float
 useBounce = bounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
 behBounce = btranslate (constant 0) useBounce (behCircle (constant 50))
+useBounceSimple = simplerBounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
+behSimplerBounce = btranslate (constant 0) useBounceSimple (behCircle (constant 50))
 squareAround :: Behavior Picture
 squareAround = btranslate (constant (-50)) (constant (-50)) (behSquare (constant 200))
 behBounceSquare :: Behavior Picture
@@ -462,13 +480,19 @@ idkAnymoreAux (Behavior b) acc counter t = if counter==t then (acc t, Behavior (
 simpleBeh = Behavior b1
    where
    b2 t =(t - 5, Behavior b2)
-   b1 t | t < 5 = (t, (Behavior b1))
+   b1 t | t < 5 = (t, Behavior b1)
         | otherwise = (0, Behavior b2)
+
 
 
 sampleTest :: Behavior Picture
 sampleTest = btranslate (simpleBeh|*constant 100) (constant 0) behCircle80
 
+simpleBeh2 = Behavior b1 where b1 t = (t, Behavior b1)
+predicateTest5 = lift1 (>= 5) time
+untilBTestPredicate = predicate predicateTest5 0 -=> timeTransform simpleBeh2 (time |- constant 5)
+sampleTest2 = simpleBeh `untilB` untilBTestPredicate
+sampleTest2Exe = btranslate (sampleTest2|*constant 100) (constant 0) behCircle80
 
 
 

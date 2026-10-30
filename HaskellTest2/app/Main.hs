@@ -19,7 +19,7 @@ main = do
         let sample t = do
                         beh <- readIORef usedBehavior
                         let use = extract beh t
-                        --writeIORef usedBehavior (snd use)
+                        writeIORef usedBehavior (snd use)
                         return (fst use)
         animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white sample controllerSetRedraw
 --animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
@@ -226,7 +226,7 @@ colorTest = bColor (constant red) easierWiggle
 occ :: Event a -> (Float, a)
 occ (Event f a) = (f,a)
 untilB :: Behavior a -> Event (Behavior a) -> Behavior a
-untilB (Behavior b) e = Behavior c where c t = let (te, b') = occ e; (aa,ab) = b t in if t < te then (aa, ab) else (at b' t, b')
+untilB (Behavior b) e = Behavior c where c t = let (te, (Behavior b')) = occ e; (aa,ab) = b t; (ba, bb) = b' t in if t < te then (aa, ab) else (ba, bb)
 eventRectangle :: Event (Behavior Picture)
 eventRectangle = Event 10 behRectangleZoom
 
@@ -265,7 +265,7 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.01--when one it does move but very slowly and not smooth
+dt = 0.001--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
 --intRec _ t0 a t | trace ("intRec t:" ++  " " ++ show t ++ " t0: " ++ show t0) False = undefindt ed
 intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti

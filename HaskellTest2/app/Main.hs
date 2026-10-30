@@ -14,12 +14,12 @@ import Graphics.Gloss.Data.ViewPort
 
 main :: IO ()
 main = do
-        usedBehavior <- newIORef behBounceFloat
+        usedBehavior <- newIORef behBounce
         let extract (Behavior b) = b
         let sample t = do
                         beh <- readIORef usedBehavior
                         let use = extract beh t
-                        writeIORef usedBehavior (snd use)
+                        --writeIORef usedBehavior (snd use)
                         return (fst use)
         animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white sample controllerSetRedraw
 --animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
@@ -226,7 +226,7 @@ colorTest = bColor (constant red) easierWiggle
 occ :: Event a -> (Float, a)
 occ (Event f a) = (f,a)
 untilB :: Behavior a -> Event (Behavior a) -> Behavior a
-untilB b e = Behavior c where c t = let (te, b') = occ e in if t < te then (at b t, b) else (at b' t, b')
+untilB (Behavior b) e = Behavior c where c t = let (te, b') = occ e; (aa,ab) = b t in if t < te then (aa, ab) else (at b' t, b')
 eventRectangle :: Event (Behavior Picture)
 eventRectangle = Event 10 behRectangleZoom
 
@@ -332,11 +332,22 @@ simplerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                                 reciprocity = 0.8
 
                                 doBounce = snapshot collide (pairB y v) ==> snd ==> \ (yHit, vHit) ->
-                                             (yHit,- (reciprocity * vHit))
+                                                               (yHit,- (reciprocity * vHit))
                                 collide = predicate ((y <=* minVal &&* (v<=*constant 0)) ||*
                                                       (y >=* maxVal &&* (v>=*constant 0))) t0
 
+changeBounce a b reciprocity = (a, constant (-1) |* constant reciprocity |* b)
+noSnapshot minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
+                                 start t0 (y0,v0) = y `untilB` (doBounce +=> start)
+
+                                     where y = y0 |+ (v |* behAbs (time |- constant t0))--calculate the behavior picture inside here
+                                           v = v0
+                                           reciprocity = 0.8
+
+                                           doBounce = collide -=> changeBounce y v reciprocity
+                                           collide = predicate ((y <=* minVal &&* (v<=*constant 0)) ||*
+                                                                 (y >=* maxVal &&* (v>=*constant 0))) t0
 
 behBounce :: Behavior Picture
 useBounce :: Behavior Float
@@ -345,6 +356,8 @@ behBounce = btranslate (constant 0) useBounce (behCircle (constant 50))
 useBounceSimple = simplerBounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
 behSimplerBounce = btranslate (constant 0) useBounceSimple (behCircle (constant 50))
 
+noSnapshotBounce = noSnapshot (constant 0) (constant 100) (constant 100) (constant 50) (constant (-9.8)) 0
+behNoSnapshot = btranslate (constant 0) noSnapshotBounce (behCircle (constant 50))
 
 bFloatToString :: Behavior Float -> Behavior String
 bFloatToString (Behavior b) = Behavior c where c t = let (ab, bb) = b t in (show ab, bFloatToString bb)
@@ -506,7 +519,8 @@ sampleTest2Exe = btranslate (sampleTest2|*constant 100) (constant 0) behCircle80
 
 
 
-
+--bool1000 = Behavior b where b t = (t
+--when circleX==something then print out time
 
 
 

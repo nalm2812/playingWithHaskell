@@ -14,15 +14,26 @@ import Graphics.Gloss.Data.ViewPort
 
 main :: IO ()
 main = do
-        usedBehavior <- newIORef behBounce
-        let extract (Behavior b) = b
-        let sample t = do
+        usedBehavior <- newIORef behSimplerBounce--if dt is extremely low it wouldnt run
+        let sample t = (do
                         beh <- readIORef usedBehavior
-                        let use = extract beh t
+                        let extract (Behavior b) = b t
+                        let use = extract beh
                         writeIORef usedBehavior (snd use)
-                        return (fst use)
+                        return (fst use))
+
+                        --atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use)))
         animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white sample controllerSetRedraw
 --animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
+
+
+randomPrint = aux 0 where aux t = trace (show t) aux (t+1)
+pm = do
+     test <- newIORef 1
+     beh <- readIORef test
+     writeIORef test (beh+1)
+     newBeh <- readIORef test
+     print beh
 
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
@@ -141,7 +152,7 @@ bLine :: Behavior Path -> Behavior Picture
 bLine = lift1 line
 
 timeTransform :: Behavior a -> Behavior Float -> Behavior a
-timeTransform (Behavior b) t2 = Behavior c where c t = let(a, ab) = b (at t2 t) in (a, timeTransform ab t2)
+timeTransform (Behavior b) (Behavior t2) = Behavior c where c t = let (ta, tb) = t2 t; (a, ab) = b ta in (a, timeTransform ab tb)
 test = timeTransform behRhombuSpin (time |* constant 100)
 
 (|*) :: Behavior Float -> Behavior Float -> Behavior Float
@@ -226,12 +237,12 @@ colorTest = bColor (constant red) easierWiggle
 occ :: Event a -> (Float, a)
 occ (Event f a) = (f,a)
 untilB :: Behavior a -> Event (Behavior a) -> Behavior a
-untilB (Behavior b) e = Behavior c where c t = let (te, (Behavior b')) = occ e; (aa,ab) = b t; (ba, bb) = b' t in if t < te then (aa, ab) else (ba, bb)
+untilB b e =  Behavior c where c t = let (te, (Behavior b')) = occ e in if t <= te then (at b t, Behavior c) else b' t
 eventRectangle :: Event (Behavior Picture)
 eventRectangle = Event 10 behRectangleZoom
 
 (+=>) :: Event a -> (Float -> a -> b) -> Event b
-(+=>) e f = Event te (f te x) where (te,x) = occ e
+(+=>) e f =  Event te (f te x) where (te,x) = occ e
 (==>) :: Event a -> (a -> b) -> Event b
 (==>) ev g = ev +=> (\_ x -> g x)
 (*=>) :: Event a -> (Float -> b) -> Event b
@@ -243,7 +254,7 @@ constEv :: Float -> a -> Event a
 constEv = Event
 
 predicate :: Behavior Bool -> Float -> Event ()
-predicate b t = Event te () where te = let aux acc = if at b acc then acc else aux (acc+dt) in aux t
+predicate (Behavior b) t = Event te () where te = let aux acc = if fst (b acc) then acc else aux (acc+dt) in aux t--predicate contains time when its true
 behBool :: Behavior Bool
 behBool = lift1 (\t -> sin t >= 1) time
 testPredicate :: Behavior Picture
@@ -256,7 +267,7 @@ testPredicate = untilB behWiggleTest predicateEvent
 (.|.) e e' = if te<=t'e then Event te x else Event t'e x' where (te,x)=occ e; (t'e,x')=occ e'
 
 snapshot :: Event a -> Behavior b -> Event (a,b)
-snapshot e b = Event te (x, at b te) where (te,x) = occ e
+snapshot e (Behavior b) = trace "snapshot" Event te (x, fst (b te)) where (te,x) = occ e
 
 joinEv :: Event (Event a) -> Event a
 joinEv e = snd (occ e)
@@ -265,10 +276,10 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.001--when one it does move but very slowly and not smooth
+dt = 0.01--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
 --intRec _ t0 a t | trace ("intRec t:" ++  " " ++ show t ++ " t0: " ++ show t0) False = undefindt ed
-intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
+intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 data Behavior2 a = Behavior2 (Float -> a)
@@ -301,40 +312,42 @@ integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
 (<=*) = lift2 (<=)
 (>=*) :: Behavior Float -> Behavior Float -> Behavior Bool
 (>=*) = lift2 (>=)
+(&&*) :: Behavior Bool -> Behavior Bool -> Behavior Bool
 (&&*) = lift2 (&&)
+(||*) :: Behavior Bool -> Behavior Bool -> Behavior Bool
 (||*) = lift2 (||)
 pairB :: Behavior a -> Behavior a -> Behavior (a,a)
-pairB (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba, bb) = b t in  ((aa,ba), pairB ab bb)
+pairB (Behavior a) (Behavior b) = Behavior c where c t = (let (aa, ab) = a t; (ba, bb) = b t in  ((aa,ba), pairB ab bb))
 --bounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Float -> Behavior Float
 bounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
 bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-        start t0 (y0,v0) = y `untilB` (doBounce +=> start)
+        start t0 (y0,v0) =   y `untilB` ( doBounce +=> start)--start and untilB are called less
 
             where y = constant y0 |+ integral v t0--calculate the behavior picture inside here
                   v = constant v0 |+ integral g t0
                   reciprocity = 0.8
 
-                  doBounce = snapshot collide (pairB y v) ==> snd ==> \ (yHit, vHit) ->
-                               (yHit,- (reciprocity * vHit))
-                  collide = predicate ((y <=* minVal &&* (v<=*constant 0)) ||*
-                                        (y >=* maxVal &&* (v>=*constant 0))) t0
+                  doBounce =  snapshot collide (pairB y v) ==> snd ==> (\ (yHit, vHit) ->
+                               (yHit,- (reciprocity * vHit)))--also isnt run
+                  collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
+                                        (y >=* maxVal &&* (v >=* constant 0))) t0
 
 
 --distanceTraveled (Behavior v) = Behavior b where b t =  (fst (v t) * t, distanceTraveled (Behavior v))
 behAbs = lift1 abs
 simplerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-                      start t0 (y0,v0) = y `untilB` (doBounce +=> start)
+                      start t0 (y0,v0) = trace (show t0) y `untilB` (doBounce +=> start)--as if it calls start right here
 
                           where y = constant y0 |+ (v |* behAbs (time |- constant t0))--calculate the behavior picture inside here
-                                v = constant v0
+                                v = constant v0--am i supposed to sample here?
                                 reciprocity = 0.8
 
                                 doBounce = snapshot collide (pairB y v) ==> snd ==> \ (yHit, vHit) ->
-                                                               (yHit,- (reciprocity * vHit))
-                                collide = predicate ((y <=* minVal &&* (v<=*constant 0)) ||*
-                                                      (y >=* maxVal &&* (v>=*constant 0))) t0
+                                                               (yHit,-1 * (reciprocity * vHit))--how is the time noted here? whats with the 0.2
+                                collide = predicate ((y <=* (constant minVal) &&* (v <=* constant 0)) ||*
+                                                      (y >=* (constant maxVal) &&* (v >=* constant 0))) t0
 
 changeBounce a b reciprocity = (a, constant (-1) |* constant reciprocity |* b)
 noSnapshot minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
@@ -351,9 +364,9 @@ noSnapshot minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
 behBounce :: Behavior Picture
 useBounce :: Behavior Float
-useBounce = bounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
+useBounce = bounce (constant 0) (constant 100) 90 (-50) (constant (-9.8)) 0
 behBounce = btranslate (constant 0) useBounce (behCircle (constant 50))
-useBounceSimple = simplerBounce (constant 0) (constant 100) 100 50 (constant (-9.8)) 0
+useBounceSimple = simplerBounce 0 100 100 50 (constant (-9.8)) 0
 behSimplerBounce = btranslate (constant 0) useBounceSimple (behCircle (constant 50))
 
 noSnapshotBounce = noSnapshot (constant 0) (constant 100) (constant 100) (constant 50) (constant (-9.8)) 0

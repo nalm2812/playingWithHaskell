@@ -14,15 +14,15 @@ import Graphics.Gloss.Data.ViewPort
 
 main :: IO ()
 main = do
-        usedBehavior <- newIORef behSimplerBounce--if dt is extremely low it wouldnt run
-        let sample t = (do
-                        beh <- readIORef usedBehavior
+        usedBehavior <- newIORef behBounce--if dt is extremely low it wouldnt run
+        let sample t = (
+                        {-beh <- readIORef usedBehavior
                         let extract (Behavior b) = b t
                         let use = extract beh
                         writeIORef usedBehavior (snd use)
-                        return (fst use))
+                        return (fst use))-}
 
-                        --atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use)))
+                        atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use)))
         animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white sample controllerSetRedraw
 --animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
 
@@ -237,7 +237,7 @@ colorTest = bColor (constant red) easierWiggle
 occ :: Event a -> (Float, a)
 occ (Event f a) = (f,a)
 untilB :: Behavior a -> Event (Behavior a) -> Behavior a
-untilB b e =  Behavior c where c t = let (te, (Behavior b')) = occ e in if t <= te then (at b t, Behavior c) else b' t
+untilB b e =  Behavior c where c t = let (te, b') = occ e in if t <= te then (at b t, Behavior c) else (at b' t, Behavior c)
 eventRectangle :: Event (Behavior Picture)
 eventRectangle = Event 10 behRectangleZoom
 
@@ -267,7 +267,7 @@ testPredicate = untilB behWiggleTest predicateEvent
 (.|.) e e' = if te<=t'e then Event te x else Event t'e x' where (te,x)=occ e; (t'e,x')=occ e'
 
 snapshot :: Event a -> Behavior b -> Event (a,b)
-snapshot e (Behavior b) = trace "snapshot" Event te (x, fst (b te)) where (te,x) = occ e
+snapshot e (Behavior b) = Event te (x, fst (b te)) where (te,x) = occ e
 
 joinEv :: Event (Event a) -> Event a
 joinEv e = snd (occ e)
@@ -278,7 +278,7 @@ joinEv e = snd (occ e)
 dt :: Float
 dt = 0.01--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
---intRec _ t0 a t | trace ("intRec t:" ++  " " ++ show t ++ " t0: " ++ show t0) False = undefindt ed
+--intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
 intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
@@ -289,7 +289,7 @@ incTest = fst (intRec (constant 9.8) 0.0001 0 0.0005)
 integral :: Behavior Float -> Float -> Behavior Float
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
 --integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined
-integral b t0 = Behavior (intRec b t0 0)
+integral b t0 = Behavior (intRec b t0 0)--this probably shouldnt be at 0!!!!!!!!!!!!!!!!!
 badIntegral b t0 = Behavior b1 where b1 t = (badIntRec b t0 0 t, badIntegral b t0)
 integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
 --Behavior c where c t = (badIntRec b t0 0 t, integral b t0)
@@ -317,12 +317,12 @@ integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
 (||*) :: Behavior Bool -> Behavior Bool -> Behavior Bool
 (||*) = lift2 (||)
 pairB :: Behavior a -> Behavior a -> Behavior (a,a)
-pairB (Behavior a) (Behavior b) = Behavior c where c t = (let (aa, ab) = a t; (ba, bb) = b t in  ((aa,ba), pairB ab bb))
+pairB (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba, bb) = b t in  ((aa,ba), pairB ab bb)
 --bounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Float -> Behavior Float
 bounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
 bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-        start t0 (y0,v0) =   y `untilB` ( doBounce +=> start)--start and untilB are called less
+        start t0 (y0,v0) = y `untilB` ( doBounce +=> start)--start and untilB are called less
 
             where y = constant y0 |+ integral v t0--calculate the behavior picture inside here
                   v = constant v0 |+ integral g t0
@@ -338,7 +338,7 @@ bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 behAbs = lift1 abs
 simplerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-                      start t0 (y0,v0) = trace (show t0) y `untilB` (doBounce +=> start)--as if it calls start right here
+                      start t0 (y0,v0) = y `untilB` (doBounce +=> start)--as if it calls start right here
 
                           where y = constant y0 |+ (v |* behAbs (time |- constant t0))--calculate the behavior picture inside here
                                 v = constant v0--am i supposed to sample here?

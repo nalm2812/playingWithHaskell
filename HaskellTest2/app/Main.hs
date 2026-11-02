@@ -12,7 +12,6 @@ import Graphics.Gloss.Data.ViewPort
 import System.IO.Unsafe (unsafePerformIO)
 
 
-
 main :: IO ()
 main = do
         usedBehavior <- newIORef behBounce--if dt is extremely low it wouldnt run
@@ -276,19 +275,21 @@ joinEv e = snd (occ e)
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
 dt = 0.001--when one it does move but very slowly and not smooth
-intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
+intRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
-intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
+intRec (Behavior b) ti a t = do
+    increment
+    if ti>=t then let c t = unsafePerformIO(intRec (Behavior b) ti a t) in return (a, Behavior c) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 data Behavior2 a = Behavior2 (Float -> a)
 badIntRec2 :: Behavior2 Float -> Float -> Float -> Float -> Float
 badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + a'*dt) t where a' = b ti
-incTest = fst (intRec (constant 9.8) 0.0001 0 0.0005)
+--incTest = fst (intRec (constant 9.8) 0.0001 0 0.0005)
 integral :: Behavior Float -> Float -> Behavior Float
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
 --integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined
-integral b t0 = Behavior (intRec b t0 0)--this probably shouldnt be at 0!!!!!!!!!!!!!!!!!
+integral b t0 = Behavior c where c t = unsafePerformIO (intRec b t0 0 t)--this probably shouldnt be at 0!!!!!!!!!!!!!!!!!
 badIntegral b t0 = Behavior b1 where b1 t = (badIntRec b t0 0 t, badIntegral b t0)
 integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
 --Behavior c where c t = (badIntRec b t0 0 t, integral b t0)
@@ -323,7 +324,7 @@ pairB (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba
 
 counter = unsafePerformIO $ newIORef 0
 increment = do x <- readIORef counter
-               if mod x 1000 == 0 then whenTrue else writeIORef counter (x+1)
+               if mod x 100000 == 0 then whenTrue else writeIORef counter (x+1)
 whenTrue = do x <- readIORef counter
               print x
               writeIORef counter (x+1)

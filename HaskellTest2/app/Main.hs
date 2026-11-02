@@ -7,7 +7,7 @@ import Data.Fixed
 
 
 main :: IO ()
-main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at forEverPrettierTest)
+main = animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at properForeverTest)
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 circleDraw :: Picture
@@ -243,7 +243,7 @@ snapshot :: Event a -> Behavior b -> Event (a,b)
 snapshot e b = Event te (x, at b te) where (te,x) = occ e
 
 joinEv :: Event (Event a) -> Event a
-joinEv e = snd (occ e)
+joinEv e = trace "join" snd (occ e)
 
 --data VectorSpace a = Vector
 --integral t t0 = Integral t t0
@@ -388,7 +388,6 @@ manyCirclesIrregularZoom = manyCirclesAux 1 (behZoom (bColor (constant red) (beh
 
 boolForCircle :: Behavior Bool -> Behavior Bool
 boolForCircle = lift2 (\t bool -> t /= 0 && (bool && round t `mod` 10==0 || not bool && round t `mod` 10 /= 0 && round t `mod` 5==0)) time
-
 --zoomNoBeh :: Float -> Picture
 
 --addCircle :: Float -> Behavior Picture
@@ -427,8 +426,7 @@ betterCircleLater :: Behavior Picture -> Float -> Behavior Bool -> (Behavior Pic
 betterCircleLater b counter bool= (combinePicture b (btranslate (constant ((counter+1)*100)) (constant 0) behCircleZoom), lift1 (not . at bool) time)
 
 betterCircleLater2 :: Behavior Picture -> Behavior Float -> Behavior Bool -> Behavior Bool ->(Behavior Picture, Behavior Bool, Behavior Bool, Behavior Float )
-betterCircleLater2 b counter bool bool2= (combinePicture b (btranslate (idkAux counter) (constant 0) behCircleZoom), lift1 (not . at bool) time, constant False, counter|+constant 1)
-
+betterCircleLater2 b counter bool bool2= (combinePicture b (btranslate (idkAux counter) (constant 0) behCircleZoom), lift1 (not . at bool) time, lift1 (not . at bool2) time, counter|+constant 1)
 
 forever :: Float -> Behavior Picture -> Behavior Picture
 forever t0 b = start t0 (b, constant False) where
@@ -454,10 +452,13 @@ constantFalse = behCircleZoom `untilB` idknextthing
 sinBool :: Behavior Bool -> Behavior Bool
 sinBool = lift2 whyyyyyy time
 whyyyyyy :: Float -> Bool -> Bool
-whyyyyyy t b = t /= 0 && (b && abs (sin t) <=0.1 && round t `mod`5 /= 0)
+whyyyyyy t b = t /= 0 && (abs (sin t) <=0.1 && (b && round t `mod` 10==0 || not b && round t `mod` 10 /= 0 && round t `mod` 5==0) )
+
+properSin :: Behavior Bool
+properSin = lift1 (\t -> t /= 0 && (abs (sin t) <=0.1 && round t `mod`5 /= 0)) time
 
 
-foreverPrettier :: Float -> Behavior Picture -> Behavior Picture
+{-foreverPrettier :: Float -> Behavior Picture -> Behavior Picture
 foreverPrettier t0 b = start t0 (b, constant False, constant False, constant 0) where
         start t0 (b, bool, bool2, counter) = b `untilB` (ughhh +=> start) where
             usedBool =  bool2 `untilB` (predicateTired -=> constant True)
@@ -469,7 +470,7 @@ foreverPrettier t0 b = start t0 (b, constant False, constant False, constant 0) 
                 espresso = predicateTired -=> sinBool (constant True)
                 cappuchino = constant False `untilB` espresso
                 coffee = predicate cappuchino t0
-                drink = predicate (sinBool usedBool) t0
+                drink = predicate (sinBool usedBool) t0-}
 
 
 cortado t0 bool = predicateTired -=> foreverTrue where predicateTired = predicate (boolForCircle bool) t0
@@ -479,13 +480,22 @@ matcha bool t0 = boolForCircle bool `untilB` cortado t0 bool
 maybeThis :: Behavior Bool -> Behavior Bool
 maybeThis bool = boolForCircle bool &&* foreverTrue
 
-forEverPrettierTest :: Behavior Picture
-forEverPrettierTest = foreverPrettier 0 behCircleZoom
+{-forEverPrettierTest :: Behavior Picture
+forEverPrettierTest = foreverPrettier 0 behCircleZoom-}
 
 weirdCircleBool :: Behavior Bool -> Behavior Bool
 weirdCircleBool = lift2 (\t bool -> t /= 0 && abs (sin t) ==0 && (bool && round t `mod` 10==0 || not bool && round t `mod` 10 /= 0 && round t `mod` 5==0)) time
 
+properForever :: Float -> Behavior Picture -> Behavior Picture
+properForever t0 b = start t0 (b, constant False, constant False, constant 0) where
+                      start t0 (b, bool, bool2, counter) = b `untilB` (ughhh +=> start) where
+                          predicateTired = predicate (boolForCircle bool) t0
+                          ughhh = joinEv (predicateTired -=> (drink -=> betterCircleLater2 b counter bool bool2)) where
 
+                              drink = predicate properSin t0
+
+properForeverTest :: Behavior Picture
+properForeverTest = properForever 0 behCircleZoom
 
 
 {-addCircle :: Picture -> [Picture] -> [Picture]

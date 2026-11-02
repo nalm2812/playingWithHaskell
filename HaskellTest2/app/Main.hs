@@ -9,20 +9,19 @@ import Graphics.Gloss.Interface.IO.Animate
 import GHC.IORef
 import System.Mem.Weak
 import Graphics.Gloss.Data.ViewPort
+import System.IO.Unsafe (unsafePerformIO)
 
 
 
 main :: IO ()
 main = do
         usedBehavior <- newIORef behBounce--if dt is extremely low it wouldnt run
-        let sample t = (
+        let sample t =
                         {-beh <- readIORef usedBehavior
                         let extract (Behavior b) = b t
                         let use = extract beh
                         writeIORef usedBehavior (snd use)
-                        return (fst use))-}
-
-                        atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use)))
+                        return (fst use))-}atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use))
         animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white sample controllerSetRedraw
 --animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
 
@@ -276,10 +275,10 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.01--when one it does move but very slowly and not smooth
+dt = 0.001--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> (Float , Behavior Float)
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
-intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + (a'*dt)) t where (a',b')=b ti
+intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 data Behavior2 a = Behavior2 (Float -> a)
@@ -319,10 +318,27 @@ integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
 pairB :: Behavior a -> Behavior a -> Behavior (a,a)
 pairB (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba, bb) = b t in  ((aa,ba), pairB ab bb)
 --bounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Float -> Behavior Float
-bounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
+
+{-# NOINLINE counter #-}
+
+counter = unsafePerformIO $ newIORef 0
+increment = do x <- readIORef counter
+               if mod x 1000 == 0 then whenTrue else writeIORef counter (x+1)
+whenTrue = do x <- readIORef counter
+              print x
+              writeIORef counter (x+1)
+
+
+{-# NOINLINE idktest #-}
+idktest = unsafePerformIO increment
+{-do x <- readIORef counter
+                       if x `mod` 1000==0 then print (show x) else -}
+
+--bounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
 bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-        start t0 (y0,v0) = y `untilB` ( doBounce +=> start)--start and untilB are called less
+        start t0 (y0,v0) =
+                     y `untilB` ( doBounce +=> start)--start and untilB are called less
 
             where y = constant y0 |+ integral v t0--calculate the behavior picture inside here
                   v = constant v0 |+ integral g t0
@@ -332,6 +348,7 @@ bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                                (yHit,- (reciprocity * vHit)))--also isnt run
                   collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
                                         (y >=* maxVal &&* (v >=* constant 0))) t0
+
 
 
 --distanceTraveled (Behavior v) = Behavior b where b t =  (fst (v t) * t, distanceTraveled (Behavior v))
@@ -345,9 +362,9 @@ simplerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                                 reciprocity = 0.8
 
                                 doBounce = snapshot collide (pairB y v) ==> snd ==> \ (yHit, vHit) ->
-                                                               (yHit,-1 * (reciprocity * vHit))--how is the time noted here? whats with the 0.2
-                                collide = predicate ((y <=* (constant minVal) &&* (v <=* constant 0)) ||*
-                                                      (y >=* (constant maxVal) &&* (v >=* constant 0))) t0
+                                                               (yHit,- (1 * (reciprocity * vHit)))--how is the time noted here? whats with the 0.2
+                                collide = predicate ((y <=* constant minVal &&* (v <=* constant 0)) ||*
+                                                      (y >=* constant maxVal &&* (v >=* constant 0))) t0
 
 changeBounce a b reciprocity = (a, constant (-1) |* constant reciprocity |* b)
 noSnapshot minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where

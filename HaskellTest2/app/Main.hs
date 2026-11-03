@@ -274,11 +274,12 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.01--when one it does move but very slowly and not smooth
+dt = 0.001--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
 intRec (Behavior b) ti a t = do
-    increment
+    tracking ti t
+    --increment
     if ti>=t then let c t = unsafePerformIO(intRec (Behavior b) ti a t) in return (a, Behavior c) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
@@ -291,7 +292,7 @@ integral :: Behavior Float -> Float -> IO (Behavior Float)
 --integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined
 integral b t0 = do
         writeIORef counter 0
-        let d = Behavior c where c t =  unsafePerformIO (intRec b t0 0 t)--this probably shouldnt be at 0!!!!!!!!!!!!!!!!!
+        let d = Behavior c where c t =  unsafePerformIO (intRec b t0 0 t)
         return d
 badIntegral b t0 = Behavior b1 where b1 t = (badIntRec b t0 0 t, badIntegral b t0)
 integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
@@ -327,10 +328,25 @@ pairB (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba
 
 counter = unsafePerformIO $ newIORef 0
 increment = do x <- readIORef counter
-               if mod x 1000 == 0 then whenTrue else writeIORef counter (x+1)
+               if (x `mod` 50000 == 0) then whenTrue else writeIORef counter (x+1)
 whenTrue = do x <- readIORef counter
               print x
               writeIORef counter (x+1)
+tracking :: Float -> Float -> IO ()
+tracking ti t = do
+                     --if ti>1 then trackingTrue ti t else return ()
+                     x <- readIORef counter
+                     if (ti == 0) then print ("t: " ++ show t) else return ()
+trackingTrue :: Float -> Float -> IO ()
+trackingTrue ti t = do print ("ti: " ++ show ti)
+                       print ("t: " ++ show t)
+tChange t = do writeIORef currentT t
+               print t
+--tracking ti = do x <- readIORef tiCounter
+
+
+currentT = unsafePerformIO $ newIORef 0
+
 
 
 

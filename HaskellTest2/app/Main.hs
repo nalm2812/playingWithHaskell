@@ -447,16 +447,19 @@ constantFalse = behCircleZoom `untilB` idknextthing
 
 --the float in predicate being whenever predicateTired is fulfilled
 
-
-
+--abs (sin t) <= 0.1
+whenSinIs0 :: Float -> Bool
+whenSinIs0 t = abs (sin t) <= dt--abs(0.9-sin (t*pi)) < 1e-10--cannot be 0, idk why
 sinBool :: Behavior Bool -> Behavior Bool
 sinBool = lift2 whyyyyyy time
 whyyyyyy :: Float -> Bool -> Bool
-whyyyyyy t b =  t /= 0 && (b && abs (sin t) <=0.1 && round t `mod`5 /= 0)
+--round t `mod`5 /= 0
+
+whyyyyyy t b =  t /= 0 && (b && whenSinIs0 t && round t `mod`5 /= 0)--if constant false then predicate cannot resolve so no output, if constant true then weird stuff because its supposed to be false at the beginning
+
 
 properSin :: Behavior Bool
 properSin = lift1 (\t -> t /= 0 && (abs (sin t) <=0.1 && round t `mod`5 /= 0)) time
-
 
 foreverPrettier :: Float -> Behavior Picture -> Behavior Picture
 foreverPrettier t0 b = start t0 (b, constant False, constant False, constant 0) where

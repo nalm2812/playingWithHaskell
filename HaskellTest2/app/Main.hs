@@ -14,7 +14,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
 main :: IO ()
 main = do
-        usedBehavior <- newIORef behBounce--if dt is extremely low it wouldnt run
+        usedBehavior <- newIORef testPredicate--if dt is extremely low it wouldnt run
         let sample t =
                         {-beh <- readIORef usedBehavior
                         let extract (Behavior b) = b t
@@ -254,7 +254,7 @@ constEv = Event
 predicate :: Behavior Bool -> Float -> Event ()
 predicate (Behavior b) t = Event te () where te = let aux acc = if fst (b acc) then acc else aux (acc+dt) in aux t--predicate contains time when its true
 behBool :: Behavior Bool
-behBool = lift1 (\t -> sin t >= 1) time
+behBool = lift1 (\t -> abs((sin t)-1) < 1e-10) time
 testPredicate :: Behavior Picture
 predicateEvent = predicate behBool 5 -=> behWiggleTest2
 testPrint = occ predicateEvent
@@ -274,13 +274,13 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.001--when one it does move but very slowly and not smooth
+dt = 0.01--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
 intRec (Behavior b) ti a t = do
     tracking ti t
     --increment
-    if ti>=t then let c t = unsafePerformIO(intRec (Behavior b) ti a t) in return (a, Behavior c) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
+    if ti>=t then let c t = unsafePerformIO(intRec (Behavior b) ti a t) in return (a, Behavior c) else intRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 data Behavior2 a = Behavior2 (Float -> a)
@@ -291,7 +291,7 @@ integral :: Behavior Float -> Float -> IO (Behavior Float)
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
 --integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined
 integral b t0 = do
-        writeIORef counter 0
+        writeIORef counter 0--could check if t0 is 0 in here
         let d = Behavior c where c t =  unsafePerformIO (intRec b t0 0 t)
         return d
 otherIntegral b t0 = Behavior (oldIntRec b t0 0)
@@ -338,7 +338,7 @@ tracking :: Float -> Float -> IO ()
 tracking ti t = do
                      --if ti>1 then trackingTrue ti t else return ()
                      x <- readIORef counter
-                     if (ti == 0) then print ("t: " ++ show t) else return ()
+                     if (abs(ti-0)< 1e-10) then print ("t: " ++ show t) else return ()
 trackingTrue :: Float -> Float -> IO ()
 trackingTrue ti t = do print ("ti: " ++ show ti)
                        print ("t: " ++ show t)

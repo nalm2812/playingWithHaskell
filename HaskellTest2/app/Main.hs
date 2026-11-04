@@ -14,7 +14,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
 main :: IO ()
 main = do
-        usedBehavior <- newIORef testPredicate--if dt is extremely low it wouldnt run
+        usedBehavior <- newIORef behWiggleTest--if dt is extremely low it wouldnt run
         let sample t =
                         {-beh <- readIORef usedBehavior
                         let extract (Behavior b) = b t
@@ -23,6 +23,7 @@ main = do
                         return (fst use))-}atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use))
         animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white sample controllerSetRedraw
 --animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
+
 
 
 randomPrint = aux 0 where aux t = trace (show t) aux (t+1)
@@ -44,11 +45,15 @@ value :: Float -> Float
 value number =abs (sin number)
 --behDraw = let test b t = (scale (value t) (value t) circleDraw, b) in Behavior(test behDraw)
 
-
-wiggle :: Float -> Float
-wiggle t = sin (pi*t)
+wiggleTrue :: Float -> IO Float
+wiggleTrue t = trace "i hate this" (do print (show t)
+                                       return (sin (pi*t)))
+wiggleFalse :: Float -> IO Float
+wiggleFalse t = (do return (sin (pi*t)))
+wiggle :: Float -> IO Float
+wiggle t = do if abs((sin (pi*t)-1)) < 1e-10 then wiggleTrue t else wiggleFalse t
 wiggleRange :: Float -> Float -> Float -> Picture
-wiggleRange hi lo t = translate 0 (lo + (hi-lo) * (wiggle t+1)/2) circleDraw
+wiggleRange hi lo t = translate 0 (lo + (hi-lo) * ((unsafePerformIO (wiggle t))+1)/2) circleDraw
 
 lift1 :: (a -> b) -> Behavior a -> Behavior b
 lift1 f (Behavior fa) = Behavior fb where fb t = let(a,ba) = fa t in (f a, lift1 f ba)
@@ -81,9 +86,10 @@ behZoom = bscale (lift1 value time) (lift1 value time)
 behCircleZoom :: Behavior Picture
 behCircleZoom = behZoom behCircle80
 
-
+unsafeWiggle :: Float -> Float
+unsafeWiggle t = unsafePerformIO (wiggle t)
 behWiggleMotion :: Behavior Float
-behWiggleMotion = lift1 wiggle time
+behWiggleMotion = lift1 unsafeWiggle time
 btranslate ::  Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 btranslate = lift3 translate
 behWiggleRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
@@ -274,7 +280,7 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.01--when one it does move but very slowly and not smooth
+dt = 0.0001--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
 intRec (Behavior b) ti a t = do

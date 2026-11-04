@@ -14,7 +14,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
 main :: IO ()
 main = do
-        usedBehavior <- newIORef behWiggleTest--if dt is extremely low it wouldnt run
+        usedBehavior <- newIORef testPredicate--if dt is extremely low it wouldnt run
         let sample t =
                         {-beh <- readIORef usedBehavior
                         let extract (Behavior b) = b t
@@ -46,8 +46,8 @@ value number =abs (sin number)
 --behDraw = let test b t = (scale (value t) (value t) circleDraw, b) in Behavior(test behDraw)
 
 wiggleTrue :: Float -> IO Float
-wiggleTrue t = trace "i hate this" (do print (show t)
-                                       return (sin (pi*t)))
+wiggleTrue t = (do print (show t)
+                   return (sin (pi*t)))
 wiggleFalse :: Float -> IO Float
 wiggleFalse t = (do return (sin (pi*t)))
 wiggle :: Float -> IO Float
@@ -260,7 +260,7 @@ constEv = Event
 predicate :: Behavior Bool -> Float -> Event ()
 predicate (Behavior b) t = Event te () where te = let aux acc = if fst (b acc) then acc else aux (acc+dt) in aux t--predicate contains time when its true
 behBool :: Behavior Bool
-behBool = lift1 (\t -> abs((sin t)-1) < 1e-10) time
+behBool = lift1 (\t -> abs((sin (t*pi))-1) < 1e-10) time
 testPredicate :: Behavior Picture
 predicateEvent = predicate behBool 5 -=> behWiggleTest2
 testPrint = occ predicateEvent
@@ -280,7 +280,7 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.0001--when one it does move but very slowly and not smooth
+dt = 0.01--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
 intRec (Behavior b) ti a t = do

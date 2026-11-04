@@ -294,6 +294,8 @@ integral b t0 = do
         writeIORef counter 0
         let d = Behavior c where c t =  unsafePerformIO (intRec b t0 0 t)
         return d
+otherIntegral b t0 = Behavior (oldIntRec b t0 0)
+oldIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (oldIntRec (Behavior b) ti a)) else oldIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 badIntegral b t0 = Behavior b1 where b1 t = (badIntRec b t0 0 t, badIntegral b t0)
 integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
 --Behavior c where c t = (badIntRec b t0 0 t, integral b t0)
@@ -361,7 +363,7 @@ bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                      y `untilB` ( doBounce +=> start)--start and untilB are called less
 
             where y = constant y0 |+ unsafePerformIO (integral v t0)--calculate the behavior picture inside here
-                  v = constant v0 |+ unsafePerformIO (integral g t0)
+                  v = constant v0 |+ (otherIntegral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
                   reciprocity = 0.8
 
                   doBounce =  snapshot collide (pairB y v) ==> snd ==> (\ (yHit, vHit) ->

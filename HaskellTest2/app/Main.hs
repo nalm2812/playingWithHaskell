@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behWiggle--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behTwoWiggle--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -69,6 +69,9 @@ circle80 = Circle 80--circle with radius 80
 zoomValue :: Float -> Float
 zoomValue number =abs (sin number)--translate time to the size a shape should be in regards to zoom
 
+atSinWave :: Float -> Picture
+atSinWave = at behSinWave--tests if `at` returns the correct function that can be used in animate (not animateIO)
+
 --wiggle functions
 
 wiggleMotion :: Float -> Float
@@ -106,17 +109,21 @@ bTranslate = lift3 translate--moves shape from default, which is (0,0)
 bTranslatedWiggleRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 bTranslatedWiggleRange hi lo wiggleFunction= bTranslate (constant 0) (fWiggleWithRange hi lo wiggleFunction)
 
---takes shape and creates wiggle behavior where the user can decide where on the x-axis the behavior occurs
+--creates wiggle behavior where the user can decide where on the x-axis the behavior occurs
 --does same as bTranslatedWiggleRange but with more stuff
---minHeight is assumed to be 0
+--minHeight is always 0
+--shape is always a circle of radius 80
 bWiggleMoveLocation :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
 bWiggleMoveLocation x wiggle hi = bTranslate x (constant 0) (bTranslatedWiggleRange hi (constant 0) wiggle behCircle80)
 
---same as bWiggleMoveLocation but the wiggle motion is already determined to be using a sin curve
+--same as bWiggleMoveLocation (as it is also called) but the wiggle motion is already determined to be using a sin curve
 --specifically, the wiggle motion is fWiggleMotion
 --can still determine x position and max height
 bSinWiggleMoveLocation :: Behavior Float -> Behavior Float -> Behavior Picture
 bSinWiggleMoveLocation x = bWiggleMoveLocation x fWiggleMotion
+
+
+--combining pictures functions
 
 --adds a Behavior picture to a Behavior of a collection of pictures and returns Behavior of a collection
 --note that it does not return a `Behavior Picture` that can be executed
@@ -151,7 +158,7 @@ fWiggleWithRange  = lift3 wiggleWithRange
 
 
 
---standard behavior shapes with defined size that I often use
+--standard behavior constants that I often use
 ----------------------------------------------------------------------------------------------------------------------------------------------
 
 behCircle80 :: Behavior Picture
@@ -160,14 +167,12 @@ behCircle80 = constant circle80
 behCircleZoom :: Behavior Picture
 behCircleZoom = bZoom behCircle80--circle of 80 radius zooms
 
-
+behEmptyPictureCollection :: Behavior [Picture]
+behEmptyPictureCollection = constant []
 
 --Behavior Picture
 --These are executable or are specific tests
 ----------------------------------------------------------------------------------------------------------------------------------------------
-atSinWave :: Float -> Picture
-atSinWave = at behSinWave--tests if `at` returns the correct function that can be used in animate (not animateIO)
-
 --wiggle-related tests
 
 --circle with radius 80 wiggles using a sin curve motion
@@ -181,6 +186,9 @@ behWiggle = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion beh
 behWiggleSquare :: Behavior Picture
 behWiggleSquare = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behSquare80
 
+--two circles of radius 80 wiggles
+behTwoWiggle :: Behavior Picture
+behTwoWiggle = bCollectionToPicture (bAddPictureToCollection (bSinWiggleMoveLocation (constant (-100)) (constant 100)) (behWiggleAnimationLocationCos (constant 100) (constant 100) `bAddPictureToCollection` behEmptyPictureCollection))
 
 
 
@@ -194,20 +202,17 @@ behWiggleSquare = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMoti
 
 
 
-emptyList :: Behavior [Picture]
-emptyList = constant []
-twoWiggle :: Behavior Picture
-twoWiggle = bCollectionToPicture (bAddPictureToCollection (bSinWiggleMoveLocation (constant (-100)) (constant 100)) (bAddPictureToCollection (behWiggleAnimationLocationCos (constant 100) (constant 100)) emptyList))
+
 combinePicture :: Behavior Picture -> Behavior Picture -> Behavior Picture
-combinePicture a b = bCollectionToPicture (a |: (b |: emptyList))--first on only pictures and then lift
+combinePicture a b = bCollectionToPicture (a |: (b |: behEmptyPictureCollection))--first on only pictures and then lift
 
 (|:) :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
 (|:) = lift2 (:)
 twoWiggleNew :: Behavior Picture
-twoWiggleNew = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: emptyList))
+twoWiggleNew = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: behEmptyPictureCollection))
 wiggleOne = bSinWiggleMoveLocation (constant (-100)) (constant 100)
 wiggleTwo = behWiggleAnimationLocationCos (constant 100) (constant 100)
-easierWiggle = bCollectionToPicture (wiggleOne |: (wiggleTwo |: emptyList))
+easierWiggle = bCollectionToPicture (wiggleOne |: (wiggleTwo |: behEmptyPictureCollection))
 
 cosWiggleMotion :: Float -> Float
 cosWiggleMotion t = cos (pi*t)

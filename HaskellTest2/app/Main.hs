@@ -49,29 +49,31 @@ lift4 f (Behavior fa) (Behavior fb) (Behavior fc) (Behavior fd) = Behavior fe wh
 
 
 constant :: a -> Behavior a
-constant a = Behavior ab where ab _ = (a, constant a)--constant
+constant a = Behavior ab where ab _ = (a, constant a)--creates a behavior thats the same regardless of time
 
 at :: Behavior a -> (Float -> a)
-at (Behavior b) t = fst (b t)
+at (Behavior b) t = fst (b t)--produces the value of Behavior `a` at Time `t`
 
 time :: Behavior Float
-time = Behavior (\t -> (t, time))
+time = Behavior (\t -> (t, time))--call on the current time inside the animation
 
 
 --non-behavior functions
 ----------------------------------------------------------------------------------------------------------------------------------------------
 circle80 :: Picture
-circle80 = Circle 80
+circle80 = Circle 80--circle with radius 80
+
+zoomValue :: Float -> Float
+zoomValue number =abs (sin number)--translate time to the size a shape should be in regards to zoom
 
 --wiggle functions
-wiggleValue :: Float -> Float
-wiggleValue number =abs (sin number)
-
 wiggle :: Float -> Float
-wiggle t = sin (pi*t)
+wiggle t = sin (pi*t)--translate time to wiggle position
 
+--same as wiggle but can decide min and max height
+--the wiggle parameter allows it to take a "wiggle function", used to determine whether the wiggle follows sin or cos or if the function is changed in any other way (like speed)
 wiggleWithRange :: Float -> Float -> Float -> Float
-wiggleWithRange hi lo wiggleValue = lo + (hi-lo) * (wiggleValue+1)/2
+wiggleWithRange hi lo wiggle = lo + (hi-lo) * (wiggle+1)/2
 
 
 
@@ -79,39 +81,59 @@ wiggleWithRange hi lo wiggleValue = lo + (hi-lo) * (wiggleValue+1)/2
 --functions that take behaviors as argument
 ----------------------------------------------------------------------------------------------------------------------------------------------
 bScale :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
-bScale = lift3 scale
+bScale = lift3 scale--change size of shape via x and y factors. e.g. used for zoom
 
 bCircle :: Behavior Float -> Behavior Picture
-bCircle = lift1 Circle
+bCircle = lift1 Circle--takes radius of circle as parameter
 
+--takes shape and zooms in and out
+--the shape is largest when its original size
+--zooms via zoomValue (abs sin)
+--zooms by scaling x and y by equal factor
 bZoom :: Behavior Picture -> Behavior Picture
-bZoom = bScale (lift1 wiggleValue time) (lift1 wiggleValue time)
+bZoom = bScale (lift1 zoomValue time) (lift1 zoomValue time)
 
 bTranslate ::  Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
-bTranslate = lift3 translate
+bTranslate = lift3 translate--moves shape from default, which is (0,0)
 
 --wiggle-related functions
 bWiggleWithRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
 bWiggleWithRange  = lift3 wiggleWithRange
 
 bTranslatedWiggleRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
-bTranslatedWiggleRange hi lo wiggleFunction= bTranslate (constant 0) (bWiggleWithRange hi lo wiggleFunction)
+bTranslatedWiggleRange hi lo wiggleFunction= bTranslate (constant 0) (bWiggleWithRange hi lo wiggleFunction)--takes shape and moves it in the y-axis by wiggleRange
+
+--takes shape and creates wiggle behavior where the user can decide where on the x-axis the behavior occurs
+--does same as bTranslatedWiggleRange but with more stuff
+--minHeight is assumed to be 0
+bWiggleMoveLocation :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
+bWiggleMoveLocation x wiggle hi = bTranslate x (constant 0) (bTranslatedWiggleRange hi (constant 0) wiggle behCircle80)
+
+
+
+
+
+
+
 
 --Behavior Float functions that are arguments for other functions
 --These floats change value depending on the time
 ----------------------------------------------------------------------------------------------------------------------------------------------
 fWiggleMotion :: Behavior Float
-fWiggleMotion = lift1 wiggle time
+fWiggleMotion = lift1 wiggle time--takes wiggle function and also adds time, so the value of wiggle depends on time
+
+
+
 
 
 --standard behavior shapes with defined size that I often use
-
+----------------------------------------------------------------------------------------------------------------------------------------------
 
 behCircle80 :: Behavior Picture
 behCircle80 = constant circle80
 
 behCircleZoom :: Behavior Picture
-behCircleZoom = bZoom behCircle80
+behCircleZoom = bZoom behCircle80--circle of 80 radius zooms
 
 
 
@@ -120,7 +142,7 @@ behCircleZoom = bZoom behCircle80
 --These are executable or are specific tests
 ----------------------------------------------------------------------------------------------------------------------------------------------
 atTest :: Float -> Picture
-atTest = at behSinWave
+atTest = at behSinWave--tests if `at` returns the correct function that can be used in animate (not animateIO)
 
 
 
@@ -132,10 +154,9 @@ atTest = at behSinWave
 
 
 
-behWiggleAnimationLocation :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-behWiggleAnimationLocation x wiggle factor = bTranslate x (constant 0) (bTranslatedWiggleRange factor (constant 0) wiggle behCircle80)
+
 behWiggleAnimationLocationSin :: Behavior Float -> Behavior Float -> Behavior Picture
-behWiggleAnimationLocationSin x = behWiggleAnimationLocation x fWiggleMotion
+behWiggleAnimationLocationSin x = bWiggleMoveLocation x fWiggleMotion
 behWiggleTest :: Behavior Picture
 behWiggleTest = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behCircle80
 behWiggleTest2 = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behSquare80
@@ -165,7 +186,7 @@ cosWiggleMotion t = cos (pi*t)
 behWiggleMotionCos :: Behavior Float
 behWiggleMotionCos = lift1 cosWiggleMotion time
 behWiggleAnimationLocationCos :: Behavior Float -> Behavior Float -> Behavior Picture
-behWiggleAnimationLocationCos x = behWiggleAnimationLocation x behWiggleMotionCos
+behWiggleAnimationLocationCos x = bWiggleMoveLocation x behWiggleMotionCos
 
 
 behRhombus :: Behavior Float -> Behavior Picture

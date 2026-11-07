@@ -93,9 +93,6 @@ wiggleWithRange hi lo wiggleMotion = lo + (hi-lo) * (wiggleMotion+1)/2
 bScale :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 bScale = lift3 scale--change size of shape via x and y factors. e.g. used for zoom
 
-bCircle :: Behavior Float -> Behavior Picture
-bCircle = lift1 Circle--takes radius of circle as parameter
-
 --takes shape and zooms in and out
 --the shape is largest when its original size
 --zooms via zoomValue (abs sin)
@@ -106,7 +103,16 @@ bZoom = bScale (lift1 zoomValue time) (lift1 zoomValue time)
 bTranslate ::  Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 bTranslate = lift3 translate--moves shape from default, which is (0,0)
 
+bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
+bRotate = lift2 rotate--rotates by the given Behavior Float in degrees
 
+--shapes
+
+bCircle :: Behavior Float -> Behavior Picture
+bCircle = lift1 Circle--takes radius of circle as parameter
+
+bRhombus :: Behavior Float -> Behavior Picture
+bRhombus l = bLine (lift1 (\r -> [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]) l)--l is length of the sides of the rhombus
 
 
 --wiggle-related functions
@@ -189,13 +195,11 @@ fWiggleWithRange  = lift3 wiggleWithRange
 behCircle80 :: Behavior Picture
 behCircle80 = constant circle80
 
-behCircleZoom :: Behavior Picture
-behCircleZoom = bZoom behCircle80--circle of 80 radius zooms
-
 behEmptyPictureCollection :: Behavior [Picture]
 behEmptyPictureCollection = constant []--used to start a collection of pictures
 
-
+behRhombus50 :: Behavior Picture
+behRhombus50 = bRhombus (constant 50)--length of sides are 50
 
 
 
@@ -230,39 +234,42 @@ behWiggleOne = bSinWiggleMoveLocation (constant (-100)) (constant 100)
 behWiggleTwo :: Behavior Picture
 behWiggleTwo = bCosWiggleMoveLocation (constant 100) (constant 100)
 
+--others
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-bRhombus :: Behavior Float -> Behavior Picture
-bRhombus n = bLine (lift1 (\r -> [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]) n)
-behRhombus50 :: Behavior Picture
-behRhombus50 = bRhombus (constant 50)
-
+behCircleZoom :: Behavior Picture
+behCircleZoom = bZoom behCircle80--circle of 80 radius zooms
 
 behRhombusZoom :: Behavior Picture
-behRhombusZoom = timeTransform (bZoom behRhombus50) (time |* constant 5)
-bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
-bRotate = lift2 rotate
+behRhombusZoom = timeTransform (bZoom behRhombus50) (time |* constant 5)--zoom is sped up by a factor of 5
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 behSpin :: Behavior Picture -> Behavior Picture
 behSpin = bRotate time
 behRhombuSpin :: Behavior Picture

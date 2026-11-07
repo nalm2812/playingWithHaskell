@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behRhombusZoom--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behGrowingLine--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -58,7 +58,8 @@ at (Behavior b) t = fst (b t)--produces the value of Behavior `a` at Time `t`
 time :: Behavior Float
 time = Behavior (\t -> (t, time))--call on the current time inside the animation
 
-
+timeTransform :: Behavior a -> Behavior Float -> Behavior a
+timeTransform (Behavior b) (Behavior t2) = Behavior c where c t = let (ta, tb) = t2 t; (a, ab) = b ta in (a, timeTransform ab tb)
 
 
 --non-behavior functions
@@ -90,6 +91,9 @@ wiggleWithRange hi lo wiggleMotion = lo + (hi-lo) * (wiggleMotion+1)/2
 
 --functions that take behaviors as argument
 ----------------------------------------------------------------------------------------------------------------------------------------------
+--gloss functions
+
+
 bScale :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 bScale = lift3 scale--change size of shape via x and y factors. e.g. used for zoom
 
@@ -108,6 +112,12 @@ bRotate = lift2 rotate--rotates a given picure by the given Behavior Float in de
 
 bSpin :: Behavior Picture -> Behavior Picture
 bSpin = bRotate time--continuously rotates a given picture by constantly rotating with the time
+
+bLine :: Behavior Path -> Behavior Picture
+bLine = lift1 line
+
+
+
 
 --shapes
 
@@ -163,9 +173,16 @@ bCombinePictures a b = bCollectionToPicture (a |: (b |: behEmptyPictureCollectio
 (|:) = lift2 (:)
 
 
+--growing line
 
 
+bAddPointToLine :: Behavior Point -> Behavior Path -> Behavior Path
+bAddPointToLine = lift2 (:)
 
+--a straight horizontal line that becomes longer as time passes
+--the factor is how fast the line grows
+bGrowingLineWithFactor :: Behavior Float -> Behavior Picture
+bGrowingLineWithFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
 
 
 --Behavior Float functions that are arguments for other functions
@@ -248,8 +265,17 @@ behCircleZoom = bZoom behCircle80--circle of 80 radius zooms
 behRhombusZoom :: Behavior Picture
 behRhombusZoom = timeTransform (bZoom behRhombus50) (time |* constant 5)
 
+--length of side is 50
+--extremely slow
 behRhombuSpin :: Behavior Picture
-behRhombuSpin = bSpin (bRhombus (constant 50))--length of side is 50
+behRhombuSpin = bSpin (bRhombus (constant 50))
+
+--same as above but faster
+behRhombusSpinFast :: Behavior Picture
+behRhombusSpinFast = timeTransform behRhombuSpin (time |* constant 100)
+
+behGrowingLine :: Behavior Picture
+behGrowingLine = bGrowingLineWithFactor (constant 10)--grows with factor of 10
 
 
 
@@ -280,18 +306,9 @@ behRhombuSpin = bSpin (bRhombus (constant 50))--length of side is 50
 
 
 
-addPointToLine :: Behavior Point -> Behavior Path -> Behavior Path
-addPointToLine = lift2 (:) --maybe change
-growingLineFactor :: Behavior Float -> Behavior Picture
-growingLineFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
-growingLine :: Behavior Picture
-growingLine = growingLineFactor (constant 10)
-bLine :: Behavior Path -> Behavior Picture
-bLine = lift1 line
 
-timeTransform :: Behavior a -> Behavior Float -> Behavior a
-timeTransform (Behavior b) (Behavior t2) = Behavior c where c t = let (ta, tb) = t2 t; (a, ab) = b ta in (a, timeTransform ab tb)
-test = timeTransform behRhombuSpin (time |* constant 100)
+
+
 
 (|*) :: Behavior Float -> Behavior Float -> Behavior Float
 (|*) = lift2 (*)

@@ -248,6 +248,9 @@ bGrowingLineWithFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
 fIntegral :: Behavior Float -> Float -> Behavior Float
 fIntegral b t0 = Behavior (fIntRec b t0 0)
 
+fIntRec :: Behavior Float -> Float -> Float -> Float -> (Float, Behavior Float)
+fIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (fIntRec (Behavior b) ti a)) else fIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
+
 --takes two behaviors and turns them into one behavior that contains the contents of both behaviors in a tuple
 bPair :: Behavior a -> Behavior a -> Behavior (a,a)
 bPair (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba, bb) = b t in  ((aa,ba), bPair ab bb)
@@ -566,6 +569,9 @@ integral2 :: Behavior2 Float -> Float -> Behavior2 Float
 integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
 
 
+
+
+
 --IO stuff
 
 
@@ -594,12 +600,54 @@ wrongIntegral b t0 = trace (show t0) (do
 checkT0 :: Float -> IO ()
 checkT0 t0 = do if abs(t0-0) < 1e-10 then print "its zero" else return ()
 
+{-# NOINLINE counter #-}
+counter :: IORef Integer
+counter = unsafePerformIO $ newIORef 0
+
+increment :: IO ()
+increment = do x <- readIORef counter
+               if (x `mod` 50000 == 0) then whenTrue else writeIORef counter (x+1)
+
+whenTrue :: IO ()
+whenTrue = do x <- readIORef counter
+              print x
+              writeIORef counter (x+1)
+
+tracking :: Float -> Float -> Float -> IO ()
+tracking ti t a = do
+                     --if ti>1 then trackingTrue ti t else return ()
+                     --(abs(ti-0)< 1e-10)
+                     x <- readIORef prevT0
+                     --y <- readIORef prevAcc
+                     if ti<x then print ("ti: " ++ show ti ++ " x: " ++ show x ++ " acc: " ++ show a ++ " prevacc: " ++ show 0) else return ()
+                     --if (t<1&&(abs(ti-0)< 1e-10)) then print ("t0: " ++ show ti ++ " " ++ "t: " ++ show t ++ " counter: " ++ show x ++ " acc: " ++ show a) else return ()
+
+trackingTrue :: Float -> Float -> IO ()
+trackingTrue ti t = do print ("ti: " ++ show ti)
+                       print ("t: " ++ show t)
+
+tChange :: Integer -> IO ()
+tChange t = do writeIORef currentT t
+               print t
+
+currentT :: IORef Integer
+currentT = unsafePerformIO $ newIORef 0
+
+
+
+
+
+
+
 
 
 --code I used beforehand
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
 --integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined
+--tracking ti = do x <- readIORef tiCounter
+{-do x <- readIORef counter
+                       if x `mod` 1000==0 then print (show x) else -}
 
 
 
@@ -664,8 +712,6 @@ checkT0 t0 = do if abs(t0-0) < 1e-10 then print "its zero" else return ()
 
 
 
-fIntRec :: Behavior Float -> Float -> Float -> Float -> (Float, Behavior Float)
-fIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (fIntRec (Behavior b) ti a)) else fIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 
 
 --Behavior c where c t = (badIntRec b t0 0 t, integral b t0)
@@ -688,40 +734,10 @@ fIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (fIntRec (Behavior b) t
 
 --bounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Float -> Behavior Float
 
-{-# NOINLINE counter #-}
-
-counter = unsafePerformIO $ newIORef 0
-increment = do x <- readIORef counter
-               if (x `mod` 50000 == 0) then whenTrue else writeIORef counter (x+1)
-whenTrue = do x <- readIORef counter
-              print x
-              writeIORef counter (x+1)
-tracking :: Float -> Float -> Float -> IO ()
-tracking ti t a = do
-                     --if ti>1 then trackingTrue ti t else return ()
-                     --(abs(ti-0)< 1e-10)
-                     x <- readIORef prevT0
-                     --y <- readIORef prevAcc
-                     if ti<x then print ("ti: " ++ show ti ++ " x: " ++ show x ++ " acc: " ++ show a ++ " prevacc: " ++ show 0) else return ()
-                     --if (t<1&&(abs(ti-0)< 1e-10)) then print ("t0: " ++ show ti ++ " " ++ "t: " ++ show t ++ " counter: " ++ show x ++ " acc: " ++ show a) else return ()
-trackingTrue :: Float -> Float -> IO ()
-trackingTrue ti t = do print ("ti: " ++ show ti)
-                       print ("t: " ++ show t)
-tChange t = do writeIORef currentT t
-               print t
---tracking ti = do x <- readIORef tiCounter
-
-
-currentT = unsafePerformIO $ newIORef 0
 
 
 
-
-
-{-do x <- readIORef counter
-                       if x `mod` 1000==0 then print (show x) else -}
-
---bounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
+bounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
 bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
         start t0 (y0,v0) =

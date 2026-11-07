@@ -55,6 +55,12 @@ constant a = Behavior ab where ab _ = (a, constant a)--creates a behavior thats 
 at :: Behavior a -> (Float -> a)
 at (Behavior b) t = fst (b t)--produces the value of Behavior `a` at Time `t`
 
+--first variable in the tuple is the time when the event occurs
+--second variable in the tuple is what acutally occurs at said time
+--e.g. the behavior that occurs at time t
+occ :: Event a -> (Float, a)
+occ (Event t a) = (t,a)
+
 time :: Behavior Float
 time = Behavior (\t -> (t, time))--call on the current time inside the animation
 
@@ -472,8 +478,7 @@ behCircleFilledZoom = bDoubleZoom behCircleFill80--circle has radius 80
 
 
 
-occ :: Event a -> (Float, a)
-occ (Event f a) = (f,a)
+
 untilB :: Behavior a -> Event (Behavior a) -> Behavior a
 untilB b e =  Behavior c where c t = let (te, b') = occ e in if t <= te then (at b t, Behavior c) else (at b' t, Behavior c)
 eventRectangle :: Event (Behavior Picture)

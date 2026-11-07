@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behGrowingLine--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behThickCircleZoom--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -116,6 +116,9 @@ bSpin = bRotate time--continuously rotates a given picture by constantly rotatin
 bLine :: Behavior Path -> Behavior Picture
 bLine = lift1 line
 
+bThickCircle :: Behavior Float -> Behavior Float -> Behavior Picture
+bThickCircle = lift2 thickCircle
+
 
 
 
@@ -209,6 +212,23 @@ fWiggleWithRange  = lift3 wiggleWithRange
 
 
 
+--operators
+
+--these can e.g. be used for timeTransform
+(|*) :: Behavior Float -> Behavior Float -> Behavior Float
+(|*) = lift2 (*)
+
+(|/) :: Behavior Float -> Behavior Float -> Behavior Float
+(|/) = lift2 (/)
+
+(|+) :: Behavior Float -> Behavior Float -> Behavior Float
+(|+) = lift2 (+)
+
+(|-) :: Behavior Float -> Behavior Float -> Behavior Float
+(|-) = lift2 (-)
+
+
+
 --standard behavior constants that I often use
 ----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -220,6 +240,9 @@ behEmptyPictureCollection = constant []--used to start a collection of pictures
 
 behRhombus50 :: Behavior Picture
 behRhombus50 = bRhombus (constant 50)--length of sides are 50
+
+behThickCircle80 :: Behavior Picture
+behThickCircle80 = bThickCircle (constant 80) (constant 5)--thickness is 5
 
 
 
@@ -277,6 +300,10 @@ behRhombusSpinFast = timeTransform behRhombuSpin (time |* constant 100)
 behGrowingLine :: Behavior Picture
 behGrowingLine = bGrowingLineWithFactor (constant 10)--grows with factor of 10
 
+--thick circle has radius 80 and thickness of 5
+--zoom is sped up by 2
+behThickCircleZoom :: Behavior Picture
+behThickCircleZoom = timeTransform (bZoom behThickCircle80) (time |* constant 2)
 
 
 
@@ -310,22 +337,11 @@ behGrowingLine = bGrowingLineWithFactor (constant 10)--grows with factor of 10
 
 
 
-(|*) :: Behavior Float -> Behavior Float -> Behavior Float
-(|*) = lift2 (*)
-(|/) :: Behavior Float -> Behavior Float -> Behavior Float
-(|/) = lift2 (/)
-(|+) :: Behavior Float -> Behavior Float -> Behavior Float
-(|+) = lift2 (+)
-(|-) :: Behavior Float -> Behavior Float -> Behavior Float
-(|-) = lift2 (-)
 
-bThickCircle :: Behavior Float -> Behavior Float -> Behavior Picture
-bThickCircle = lift2 thickCircle
 
-thickCircle80 :: Behavior Picture
-thickCircle80 = bThickCircle (constant 80) (constant 5)
-thickCircleZoom :: Behavior Picture
-thickCircleZoom = timeTransform (bZoom thickCircle80) (time |* constant 2)
+
+
+
 
 bBlank = constant Graphics.Gloss.Blank
 bArc :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture

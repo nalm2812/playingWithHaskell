@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behWiggleTest--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behWiggle--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -100,8 +100,9 @@ bTranslate = lift3 translate--moves shape from default, which is (0,0)
 
 --wiggle-related functions
 
+--takes shape and moves it in the y-axis by wiggleRange
 bTranslatedWiggleRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
-bTranslatedWiggleRange hi lo wiggleFunction= bTranslate (constant 0) (fWiggleWithRange hi lo wiggleFunction)--takes shape and moves it in the y-axis by wiggleRange
+bTranslatedWiggleRange hi lo wiggleFunction= bTranslate (constant 0) (fWiggleWithRange hi lo wiggleFunction)
 
 --takes shape and creates wiggle behavior where the user can decide where on the x-axis the behavior occurs
 --does same as bTranslatedWiggleRange but with more stuff
@@ -151,12 +152,24 @@ behCircleZoom = bZoom behCircle80--circle of 80 radius zooms
 
 
 
-
 --Behavior Picture
 --These are executable or are specific tests
 ----------------------------------------------------------------------------------------------------------------------------------------------
-atTest :: Float -> Picture
-atTest = at behSinWave--tests if `at` returns the correct function that can be used in animate (not animateIO)
+atSinWave :: Float -> Picture
+atSinWave = at behSinWave--tests if `at` returns the correct function that can be used in animate (not animateIO)
+
+--wiggle-related tests
+
+--circle with radius 80 wiggles using a sin curve motion
+--min is 0 and max is 100
+--the behavior occurs in the middle of the window (0,0)
+behWiggle :: Behavior Picture
+behWiggle = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behCircle80
+
+--same as behWiggle but with a square instead
+--square lengths are 80
+behWiggleSquare :: Behavior Picture
+behWiggleSquare = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behSquare80
 
 
 
@@ -168,11 +181,6 @@ atTest = at behSinWave--tests if `at` returns the correct function that can be u
 
 
 
-
-
-behWiggleTest :: Behavior Picture
-behWiggleTest = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behCircle80
-behWiggleTest2 = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behSquare80
 
 
 addPicture :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
@@ -334,9 +342,9 @@ predicate (Behavior b) t = Event te () where te = let aux acc = if fst (b acc) t
 behBool :: Behavior Bool
 behBool = lift1 (\t -> abs((sin (t*pi))-1) < 1e-10) time
 testPredicate :: Behavior Picture
-predicateEvent = predicate behBool 5 -=> behWiggleTest2
+predicateEvent = predicate behBool 5 -=> behWiggleSquare
 testPrint = occ predicateEvent
-testPredicate = untilB behWiggleTest predicateEvent
+testPredicate = untilB behWiggle predicateEvent
 
 
 (.|.) :: Event a -> Event a -> Event a

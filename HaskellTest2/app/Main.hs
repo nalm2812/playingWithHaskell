@@ -105,6 +105,15 @@ dt = 0.01--delta time. How much is incremented in the recursive call when calcul
 
 
 
+--weird other section
+
+
+atFloat :: Behavior Float -> Float
+atFloat min = at min 0
+
+uhhhh :: Behavior Float -> Float -> Float
+uhhhh min = max (atFloat min)
+
 
 --functions that take behaviors as argument
 ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -249,6 +258,31 @@ bGrowingLineWithFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
 bPair :: Behavior a -> Behavior a -> Behavior (a,a)
 bPair (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba, bb) = b t in  ((aa,ba), bPair ab bb)
 
+bFloatToString :: Behavior Float -> Behavior String
+bFloatToString (Behavior b) = Behavior c where c t = let (ab, bb) = b t in (show ab, bFloatToString bb)
+
+bProperBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
+bProperBounce min max r v start = let properStart = uhhhh min start in bTranslate (constant 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
+
+bProperBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
+bProperBounceWithSquare min max r v start= bCombinePictures (bProperBounce min max r v start) (bProperSquare min max r)
+
+bSquareLengthForBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
+bSquareLengthForBounce min max r = (max |- min) |+ (r |* constant 2)
+
+bProperSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
+bProperSquare min max r = bTranslate (bSquareLengthForBounce min max r |/ constant (-2)) (min |- r) (bSquare (bSquareLengthForBounce min max r))
+
+bHorizontalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
+bHorizontalBounceWithSquare min max r v start = bCombinePictures (bHorizontalBounce min max r v start) (bHorizontalSquare min max r)
+bHorizontalBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
+bHorizontalBounce min max r v start = let properStart = uhhhh min start in bTranslate (fBounce min max properStart v (constant 0) 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
+
+bHorizontalSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
+bHorizontalSquare min max r = bTranslate (constant (-1) |* min) (min |- r) (bSquare (bSquareLengthForBounce min max r))
+
+
+
 
 --other
 
@@ -278,6 +312,15 @@ bFillPolygon (Behavior p) = Behavior b where b t = let (Line a, ab) = p t in (po
 
 bCircleFill :: Behavior Picture -> Behavior Picture
 bCircleFill (Behavior p) = Behavior b where b t = let (Circle a, ab) = p t in (circleSolid a, bFillPolygon ab)
+
+
+
+
+
+
+
+
+
 
 
 
@@ -360,9 +403,11 @@ fSimplerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                                 collide = predicate ((y <=* constant minVal &&* (v <=* constant 0)) ||*
                                                       (y >=* constant maxVal &&* (v >=* constant 0))) t0
 
+fUseBounce :: Behavior Float
+fUseBounce = fBounce (constant 0) (constant 100) 90 (-50) (constant (-9.8)) 0
 
-
-
+fUseBounceSimple :: Behavior Float
+fUseBounceSimple = fSimplerBounce 0 100 100 50 (constant (-9.8)) 0
 
 
 
@@ -420,7 +465,8 @@ behRectangle = bRectangle (constant 80) (constant 40)--length 80, height 40
 behBool :: Behavior Bool
 behBool = lift1 (\t -> abs((sin (t*pi))-1) < 1e-10) time
 
-
+behSquareAround :: Behavior Picture
+behSquareAround = bTranslate (constant (-50)) (constant (-50)) (bSquare (constant 200))
 
 
 
@@ -482,8 +528,29 @@ behPredicate = untilB behWiggle eventPredicate
 behLongerBounce :: Behavior Picture
 behLongerBounce = bTranslate (constant 0) fUseLongerBounce (bCircle (constant 50))
 
+behBounce :: Behavior Picture
+behBounce = bTranslate (constant 0) fUseBounce (bCircle (constant 50))
 
+behSimplerBounce :: Behavior Picture
+behSimplerBounce = bTranslate (constant 0) fUseBounceSimple (bCircle (constant 50))
 
+behBounceFloat :: Behavior Picture
+behBounceFloat = bText (bFloatToString fUseBounce)
+
+behBounceSquare :: Behavior Picture
+behBounceSquare = bCombinePictures behSquareAround behBounce
+
+behProperBounce :: Behavior Picture
+behProperBounce = bProperBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
+
+behHorizontalBounce :: Behavior Picture
+behHorizontalBounce = bHorizontalBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
+
+behNoLagBounce :: Behavior Picture
+behNoLagBounce = bProperBounceWithSquare (constant 0) (constant 100) (constant 50) 50 100
+
+behSmallBall :: Behavior Picture
+behSmallBall = bHorizontalBounce (constant 0) (constant 300) (constant 10) 40 42
 
 
 --others
@@ -812,56 +879,28 @@ currentT = unsafePerformIO $ newIORef 0
 --distanceTraveled (Behavior v) = Behavior b where b t =  (fst (v t) * t, distanceTraveled (Behavior v))
 
 
-behBounce :: Behavior Picture
-useBounce :: Behavior Float
-useBounce = fBounce (constant 0) (constant 100) 90 (-50) (constant (-9.8)) 0
-behBounce = bTranslate (constant 0) useBounce (bCircle (constant 50))
-useBounceSimple = fSimplerBounce 0 100 100 50 (constant (-9.8)) 0
-behSimplerBounce = bTranslate (constant 0) useBounceSimple (bCircle (constant 50))
 
 
 
 
-bFloatToString :: Behavior Float -> Behavior String
-bFloatToString (Behavior b) = Behavior c where c t = let (ab, bb) = b t in (show ab, bFloatToString bb)
-
-
-behBounceFloat = bText (bFloatToString useBounce)
 
 
 
-squareAround :: Behavior Picture
-squareAround = bTranslate (constant (-50)) (constant (-50)) (bSquare (constant 200))
-behBounceSquare :: Behavior Picture
-behBounceSquare = bCombinePictures squareAround behBounce
-properBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-iGiveUp :: Behavior Float -> Float
-iGiveUp min = at min 0
-uhhhh min = max (iGiveUp min)
-properBounce min max r v start = let properStart = uhhhh min start in bTranslate (constant 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
-properBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-properBounceWithSquare min max r v start= bCombinePictures (properBounce min max r v start) (properSquare min max r)
-squareLengthForBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
-squareLengthForBounce min max r = (max |- min) |+ (r |* constant 2)
-properSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-properSquare min max r = bTranslate (squareLengthForBounce min max r |/ constant (-2)) (min |- r) (bSquare (squareLengthForBounce min max r))
-testProperBounce :: Behavior Picture
-testProperBounce = properBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 
 
-horizontalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-horizontalBounceWithSquare min max r v start = bCombinePictures (horizontalBounce min max r v start) (horizontalSquare min max r)
-horizontalBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-horizontalBounce min max r v start = let properStart = uhhhh min start in bTranslate (fBounce min max properStart v (constant 0) 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
-testHorizontalBounce :: Behavior Picture
-testHorizontalBounce = horizontalBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
-horizontalSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-horizontalSquare min max r = bTranslate (constant (-1) |* min) (min |- r) (bSquare (squareLengthForBounce min max r))
-noLagBounce :: Behavior Picture
-noLagBounce = properBounceWithSquare (constant 0) (constant 100) (constant 50) 50 100
 
-smallBall :: Behavior Picture
-smallBall = horizontalBounce (constant 0) (constant 300) (constant 10) 40 42
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 --bounce :: Behavior Float -> Behavior Float

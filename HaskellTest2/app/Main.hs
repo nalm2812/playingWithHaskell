@@ -230,6 +230,12 @@ bGrowingLineWithFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
 
 
 
+--bounce related stuff
+
+
+fIntegral :: Behavior Float -> Float -> Behavior Float
+fIntegral b t0 = Behavior (intRec b t0 0)
+
 
 --other
 
@@ -496,6 +502,12 @@ eventRectangle = Event 10 behRectangleZoom--at time 10 the behavior is behRectan
 printPredicateEvent :: (Float, Behavior Picture)
 printPredicateEvent = occ predicateEvent--i just wanted to print out the tuple of the predicateEvent
 
+
+
+
+--bounce related
+
+
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 
@@ -507,8 +519,14 @@ badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b
 printInc :: Float
 printInc = fst (intRec (constant 9.8) 0.0001 0 0.0005)
 
+badIntegral :: Behavior Float -> Float -> Behavior Float
+badIntegral b t0 = Behavior b1 where b1 t = (badIntRec b t0 0 t, badIntegral b t0)
+integral2 :: Behavior2 Float -> Float -> Behavior2 Float
+integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
+
 
 --IO stuff
+
 
 wrongIntRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
 wrongIntRec (Behavior b) ti a t = do
@@ -526,8 +544,21 @@ prevT0 = unsafePerformIO $ newIORef 0
 prevAcc :: IORef Float
 prevAcc = unsafePerformIO $ newIORef 0
 
+wrongIntegral :: Behavior Float -> Float -> IO (Behavior Float)
+wrongIntegral b t0 = trace (show t0) (do
+        writeIORef counter 0
+        let d = Behavior c where c t = unsafePerformIO (wrongIntRec b t0 0 t)
+        return d)
+
+checkT0 :: Float -> IO ()
+checkT0 t0 = do if abs(t0-0) < 1e-10 then print "its zero" else return ()
+
+
+
 --code I used beforehand
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
+--integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
+--integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined
 
 
 
@@ -594,20 +625,13 @@ testPredicate = untilB behWiggle predicateEvent
 
 
 
-wrongIntegral :: Behavior Float -> Float -> IO (Behavior Float)
---integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
---integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined
-wrongIntegral b t0 = trace (show t0) (do
-        writeIORef counter 0
-        let d = Behavior c where c t = unsafePerformIO (wrongIntRec b t0 0 t)
-        return d)
-checkT0 :: Float -> IO ()
-checkT0 t0 = do if abs(t0-0) < 1e-10 then print "its zero" else return ()
-integral b t0 = Behavior (intRec b t0 0)
+
+
+
+intRec :: Behavior Float -> Float -> Float -> Float -> (Float, Behavior Float)
 intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 
-badIntegral b t0 = Behavior b1 where b1 t = (badIntRec b t0 0 t, badIntegral b t0)
-integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
+
 --Behavior c where c t = (badIntRec b t0 0 t, integral b t0)
 --Behavior (intRec b t0 0)
 --integral b a f =
@@ -675,8 +699,8 @@ bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
         start t0 (y0,v0) =
                      y `untilB` ( doBounce +=> start)--start and untilB are called less
 
-            where y = constant y0 |+ (integral v t0)--calculate the behavior picture inside here
-                  v = constant v0 |+ (integral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
+            where y = constant y0 |+ (fIntegral v t0)--calculate the behavior picture inside here
+                  v = constant v0 |+ (fIntegral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
                   reciprocity = 0.8
 
                   doBounce =  snapshot collide (pairB y v) ==> snd ==> (\ (yHit, vHit) ->
@@ -688,8 +712,8 @@ longerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
         start t0 (y0,v0) =
                      y `untilB` ( doBounce +=> start)--start and untilB are called less
 
-            where y = constant y0 |+ (integral v t0)--calculate the behavior picture inside here
-                  v = constant v0 |+ (integral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
+            where y = constant y0 |+ (fIntegral v t0)--calculate the behavior picture inside here
+                  v = constant v0 |+ (fIntegral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
                   reciprocity = 0.97
 
                   doBounce =  snapshot collide (pairB y v) ==> snd ==> (\ (yHit, vHit) ->

@@ -12,20 +12,14 @@ import Data.IORef (atomicWriteIORef)
 
 main :: IO ()
 main = do
-        usedBehavior <- newIORef behLongerBounce
+        usedBehavior <- newIORef behLongerBounce--if dt is extremely low it wouldnt run
         let sample t =
-                        return (fst use))-}atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use))
+                        atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use))
         animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white sample controllerSetRedraw
 
 
 
-randomPrint = aux 0 where aux t = trace (show t) aux (t+1)
-pm = do
-     test <- newIORef 1
-     beh <- readIORef test
-     writeIORef test (beh+1)
-     newBeh <- readIORef test
-     print beh
+
 
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
@@ -274,36 +268,37 @@ joinEv e = snd (occ e)
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
 dt = 0.01--when one it does move but very slowly and not smooth
-intRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
+wrongIntRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
 prevT0 = unsafePerformIO $ newIORef 0
 prevAcc = unsafePerformIO $ newIORef 0
-intRec (Behavior b) ti a t = do
+wrongIntRec (Behavior b) ti a t = do
     --x <- readIORef counter
     --writeIORef counter (x+1)
     tracking ti t a
     --increment
     atomicWriteIORef prevAcc a
     atomicWriteIORef prevT0 ti
-    if ti>=t then let c t = (oldIntRec (Behavior b) ti a t) in return (a, Behavior c) else intRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti
+    if ti>=t then let c t = (intRec (Behavior b) ti a t) in return (a, Behavior c) else wrongIntRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti
+
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 data Behavior2 a = Behavior2 (Float -> a)
 badIntRec2 :: Behavior2 Float -> Float -> Float -> Float -> Float
 badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + a'*dt) t where a' = b ti
 --incTest = fst (intRec (constant 9.8) 0.0001 0 0.0005)
-integral :: Behavior Float -> Float -> IO (Behavior Float)
+wrongIntegral :: Behavior Float -> Float -> IO (Behavior Float)
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
 --integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined
-integral b t0 = trace (show t0) (do
+wrongIntegral b t0 = trace (show t0) (do
         writeIORef counter 0
-        let d = Behavior c where c t = unsafePerformIO (intRec b t0 0 t)
+        let d = Behavior c where c t = unsafePerformIO (wrongIntRec b t0 0 t)
         return d)
 checkT0 :: Float -> IO ()
 checkT0 t0 = do if abs(t0-0) < 1e-10 then print "its zero" else return ()
-otherIntegral b t0 = Behavior (oldIntRec b t0 0)
-oldIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (oldIntRec (Behavior b) ti a)) else oldIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
-oldIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (oldIntRec (Behavior b) ti a)) else oldIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
+integral b t0 = Behavior (intRec b t0 0)
+intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
+
 badIntegral b t0 = Behavior b1 where b1 t = (badIntRec b t0 0 t, badIntegral b t0)
 integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
 --Behavior c where c t = (badIntRec b t0 0 t, integral b t0)
@@ -373,8 +368,8 @@ bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
         start t0 (y0,v0) =
                      y `untilB` ( doBounce +=> start)--start and untilB are called less
 
-            where y = constant y0 |+ (otherIntegral v t0)--calculate the behavior picture inside here
-                  v = constant v0 |+ (otherIntegral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
+            where y = constant y0 |+ (integral v t0)--calculate the behavior picture inside here
+                  v = constant v0 |+ (integral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
                   reciprocity = 0.8
 
                   doBounce =  snapshot collide (pairB y v) ==> snd ==> (\ (yHit, vHit) ->
@@ -386,8 +381,8 @@ longerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
         start t0 (y0,v0) =
                      y `untilB` ( doBounce +=> start)--start and untilB are called less
 
-            where y = constant y0 |+ (otherIntegral v t0)--calculate the behavior picture inside here
-                  v = constant v0 |+ (otherIntegral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
+            where y = constant y0 |+ (integral v t0)--calculate the behavior picture inside here
+                  v = constant v0 |+ (integral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
                   reciprocity = 0.97
 
                   doBounce =  snapshot collide (pairB y v) ==> snd ==> (\ (yHit, vHit) ->
@@ -597,8 +592,7 @@ sampleTest2Exe = btranslate (sampleTest2|*constant 100) (constant 0) behCircle80
 
 
 
---bool1000 = Behavior b where b t = (t
---when circleX==something then print out time
+
 
 
 

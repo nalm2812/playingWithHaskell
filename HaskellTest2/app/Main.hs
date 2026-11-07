@@ -82,7 +82,8 @@ wiggleMotion t = sin (pi*t)--translate time to wiggle position
 wiggleWithRange :: Float -> Float -> Float -> Float
 wiggleWithRange hi lo wiggleMotion = lo + (hi-lo) * (wiggleMotion+1)/2
 
-
+cosWiggleMotion :: Float -> Float
+cosWiggleMotion t = cos (pi*t)--time to wiggle position with cos
 
 
 --functions that take behaviors as argument
@@ -213,15 +214,13 @@ behWiggleSquare = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMoti
 --right wiggle uses cos curve and x=100
 --both wiggles have max of 100
 behTwoWiggle :: Behavior Picture
-behTwoWiggle = bCollectionToPicture (wiggleOne |: (wiggleTwo |: behEmptyPictureCollection))
+behTwoWiggle = bCollectionToPicture (behWiggleOne |: (behWiggleTwo |: behEmptyPictureCollection))
 
-wiggleOne :: Behavior Picture
-wiggleOne = bSinWiggleMoveLocation (constant (-100)) (constant 100)
+behWiggleOne :: Behavior Picture
+behWiggleOne = bSinWiggleMoveLocation (constant (-100)) (constant 100)
 
-wiggleTwo :: Behavior Picture
-wiggleTwo = behWiggleAnimationLocationCos (constant 100) (constant 100)
-
-
+behWiggleTwo :: Behavior Picture
+behWiggleTwo = behWiggleAnimationLocationCos (constant 100) (constant 100)
 
 
 
@@ -239,8 +238,9 @@ wiggleTwo = behWiggleAnimationLocationCos (constant 100) (constant 100)
 
 
 
-cosWiggleMotion :: Float -> Float
-cosWiggleMotion t = cos (pi*t)
+
+
+
 behWiggleMotionCos :: Behavior Float
 behWiggleMotionCos = lift1 cosWiggleMotion time
 behWiggleAnimationLocationCos :: Behavior Float -> Behavior Float -> Behavior Picture

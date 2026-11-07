@@ -3,27 +3,19 @@ module Main(main) where
 
 import Graphics.Gloss
 import Debug.Trace
-import Data.Fixed
 import Graphics.Gloss.Data.Controller
 import Graphics.Gloss.Interface.IO.Animate
 import GHC.IORef
-import System.Mem.Weak
-import Graphics.Gloss.Data.ViewPort
 import System.IO.Unsafe (unsafePerformIO)
 import Data.IORef (atomicWriteIORef)
 --print (show (abs(1.9999994e-3-0) < 1e-10))
 
 main :: IO ()
 main = do
-        usedBehavior <- newIORef behBounce--if dt is extremely low it wouldnt run
+        usedBehavior <- newIORef behLongerBounce
         let sample t =
-                        {-beh <- readIORef usedBehavior
-                        let extract (Behavior b) = b t
-                        let use = extract beh
-                        writeIORef usedBehavior (snd use)
                         return (fst use))-}atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use))
         animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white sample controllerSetRedraw
---animate (InWindow "Nice Window" (1000, 1000) (10, 10)) white (at behBounce)
 
 
 
@@ -281,7 +273,7 @@ joinEv e = snd (occ e)
 --integral t t0 = Integral t t0
 --behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
 dt :: Float
-dt = 0.001--when one it does move but very slowly and not smooth
+dt = 0.01--when one it does move but very slowly and not smooth
 intRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
 prevT0 = unsafePerformIO $ newIORef 0
@@ -291,8 +283,8 @@ intRec (Behavior b) ti a t = do
     --writeIORef counter (x+1)
     tracking ti t a
     --increment
-    atomicWriteIORef prevT0 ti
     atomicWriteIORef prevAcc a
+    atomicWriteIORef prevT0 ti
     if ti>=t then let c t = (oldIntRec (Behavior b) ti a t) in return (a, Behavior c) else intRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti
 badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
 badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
@@ -310,6 +302,7 @@ integral b t0 = trace (show t0) (do
 checkT0 :: Float -> IO ()
 checkT0 t0 = do if abs(t0-0) < 1e-10 then print "its zero" else return ()
 otherIntegral b t0 = Behavior (oldIntRec b t0 0)
+oldIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (oldIntRec (Behavior b) ti a)) else oldIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 oldIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (oldIntRec (Behavior b) ti a)) else oldIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 badIntegral b t0 = Behavior b1 where b1 t = (badIntRec b t0 0 t, badIntegral b t0)
 integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
@@ -380,7 +373,7 @@ bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
         start t0 (y0,v0) =
                      y `untilB` ( doBounce +=> start)--start and untilB are called less
 
-            where y = constant y0 |+ unsafePerformIO (integral v t0)--calculate the behavior picture inside here
+            where y = constant y0 |+ (otherIntegral v t0)--calculate the behavior picture inside here
                   v = constant v0 |+ (otherIntegral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
                   reciprocity = 0.8
 
@@ -388,7 +381,22 @@ bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                                (yHit,- (reciprocity * vHit)))--also isnt run
                   collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
                                         (y >=* maxVal &&* (v >=* constant 0))) t0
+longerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
+        start t0 (y0,v0) =
+                     y `untilB` ( doBounce +=> start)--start and untilB are called less
+
+            where y = constant y0 |+ (otherIntegral v t0)--calculate the behavior picture inside here
+                  v = constant v0 |+ (otherIntegral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
+                  reciprocity = 0.97
+
+                  doBounce =  snapshot collide (pairB y v) ==> snd ==> (\ (yHit, vHit) ->
+                               (yHit,- (reciprocity * vHit)))--also isnt run
+                  collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
+                                        (y >=* maxVal &&* (v >=* constant 0))) t0
+
+useLongerBounce = longerBounce (constant 0) (constant 500) 400 100 (constant (-9.8)) 0
+behLongerBounce = btranslate (constant 0) useLongerBounce (behCircle (constant 50))
 
 
 --distanceTraveled (Behavior v) = Behavior b where b t =  (fst (v t) * t, distanceTraveled (Behavior v))

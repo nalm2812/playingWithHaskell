@@ -100,6 +100,9 @@ cosWiggleMotion t = cos (pi*t)--time to wiggle position with cos
 wiggleWithRange :: Float -> Float -> Float -> Float
 wiggleWithRange hi lo wiggleMotion = lo + (hi-lo) * (wiggleMotion+1)/2
 
+dt :: Float
+dt = 0.01--delta time. How much is incremented in the recursive call when calculating integral and predicate
+
 
 
 
@@ -449,7 +452,11 @@ behCircleFilledZoom = bDoubleZoom behCircleFill80--circle has radius 80
 constEv :: Float -> a -> Event a
 constEv = Event--takes time and the value inside event e.g. behavior
 
+snapshot :: Event a -> Behavior b -> Event (a,b)
+snapshot e (Behavior b) = Event te (x, fst (b te)) where (te,x) = occ e
 
+joinEv :: Event (Event a) -> Event a
+joinEv e = snd (occ e)
 
 
 --saved events
@@ -486,12 +493,41 @@ eventRectangle = Event 10 behRectangleZoom--at time 10 the behavior is behRectan
 
 --debugging stuff
 ----------------------------------------------------------------------------------------------------------------------------------------------
-testPrint :: (Float, Behavior Picture)
-testPrint = occ predicateEvent--i just wanted to print out the tuple of the predicateEvent
+printPredicateEvent :: (Float, Behavior Picture)
+printPredicateEvent = occ predicateEvent--i just wanted to print out the tuple of the predicateEvent
+
+badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
+badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
+
+data Behavior2 a = Behavior2 (Float -> a)
+
+badIntRec2 :: Behavior2 Float -> Float -> Float -> Float -> Float
+badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + a'*dt) t where a' = b ti
+
+printInc :: Float
+printInc = fst (intRec (constant 9.8) 0.0001 0 0.0005)
 
 
+--IO stuff
 
+wrongIntRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
+wrongIntRec (Behavior b) ti a t = do
+    --x <- readIORef counter
+    --writeIORef counter (x+1)
+    tracking ti t a
+    --increment
+    atomicWriteIORef prevAcc a
+    atomicWriteIORef prevT0 ti
+    if ti>=t then let c t = (intRec (Behavior b) ti a t) in return (a, Behavior c) else wrongIntRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti
 
+prevT0 :: IORef Float
+prevT0 = unsafePerformIO $ newIORef 0
+
+prevAcc :: IORef Float
+prevAcc = unsafePerformIO $ newIORef 0
+
+--code I used beforehand
+--intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
 
 
 
@@ -545,36 +581,19 @@ testPredicate = untilB behWiggle predicateEvent
 
 
 
-snapshot :: Event a -> Behavior b -> Event (a,b)
-snapshot e (Behavior b) = Event te (x, fst (b te)) where (te,x) = occ e
 
-joinEv :: Event (Event a) -> Event a
-joinEv e = snd (occ e)
 
---data VectorSpace a = Vector
---integral t t0 = Integral t t0
---behIntegral :: VectorSpace a => Behavior a -> Behavior Float -> Behavior a
-dt :: Float
-dt = 0.01--when one it does move but very slowly and not smooth
-wrongIntRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
---intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
-prevT0 = unsafePerformIO $ newIORef 0
-prevAcc = unsafePerformIO $ newIORef 0
-wrongIntRec (Behavior b) ti a t = do
-    --x <- readIORef counter
-    --writeIORef counter (x+1)
-    tracking ti t a
-    --increment
-    atomicWriteIORef prevAcc a
-    atomicWriteIORef prevT0 ti
-    if ti>=t then let c t = (intRec (Behavior b) ti a t) in return (a, Behavior c) else wrongIntRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti
 
-badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
-badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
-data Behavior2 a = Behavior2 (Float -> a)
-badIntRec2 :: Behavior2 Float -> Float -> Float -> Float -> Float
-badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + a'*dt) t where a' = b ti
---incTest = fst (intRec (constant 9.8) 0.0001 0 0.0005)
+
+
+
+
+
+
+
+
+
+
 wrongIntegral :: Behavior Float -> Float -> IO (Behavior Float)
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
 --integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined

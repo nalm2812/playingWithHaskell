@@ -446,6 +446,15 @@ behCircleFilledZoom = bDoubleZoom behCircleFill80--circle has radius 80
 
 --Functions that return an event
 ----------------------------------------------------------------------------------------------------------------------------------------------
+constEv :: Float -> a -> Event a
+constEv = Event--takes time and the value inside event e.g. behavior
+
+
+
+
+--saved events
+
+
 eventRectangle :: Event (Behavior Picture)
 eventRectangle = Event 10 behRectangleZoom--at time 10 the behavior is behRectangleZoom
 
@@ -467,6 +476,9 @@ eventRectangle = Event 10 behRectangleZoom--at time 10 the behavior is behRectan
 (-=>) :: Event a -> b -> Event b
 (-=>) ev x' = ev +=> (\_ _ -> x')
 
+--takes whichever of the events occurs first
+(.|.) :: Event a -> Event a -> Event a
+(.|.) e e' = if te<=t'e then Event te x else Event t'e x' where (te,x)=occ e; (t'e,x')=occ e'
 
 
 
@@ -516,8 +528,6 @@ eventRectangle = Event 10 behRectangleZoom--at time 10 the behavior is behRectan
 
 
 
-constEv :: Float -> a -> Event a
-constEv = Event
 
 predicate :: Behavior Bool -> Float -> Event ()
 predicate (Behavior b) t = Event te () where te = let aux acc = if fst (b acc) then acc else aux (acc+dt) in aux t--predicate contains time when its true
@@ -529,8 +539,7 @@ testPrint = occ predicateEvent
 testPredicate = untilB behWiggle predicateEvent
 
 
-(.|.) :: Event a -> Event a -> Event a
-(.|.) e e' = if te<=t'e then Event te x else Event t'e x' where (te,x)=occ e; (t'e,x')=occ e'
+
 
 snapshot :: Event a -> Behavior b -> Event (a,b)
 snapshot e (Behavior b) = Event te (x, fst (b te)) where (te,x) = occ e

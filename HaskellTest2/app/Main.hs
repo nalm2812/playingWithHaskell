@@ -170,6 +170,12 @@ behCircleZoom = bZoom behCircle80--circle of 80 radius zooms
 behEmptyPictureCollection :: Behavior [Picture]
 behEmptyPictureCollection = constant []--used to start a collection of pictures
 
+
+
+
+
+
+
 --Behavior Picture
 --These are executable or are specific tests
 ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -186,7 +192,10 @@ behWiggle = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion beh
 behWiggleSquare :: Behavior Picture
 behWiggleSquare = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behSquare80
 
---two circles of radius 80 wiggles
+--two circles of radius 80 wiggles. The wiggles are different due to different wiggle motions
+--left wiggle uses a sin curve and x=-100
+--right wiggle uses cos curve and x=100
+--both wiggles have max of 100
 behTwoWiggle :: Behavior Picture
 behTwoWiggle = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100) `bAddPictureToCollection` (behWiggleAnimationLocationCos (constant 100) (constant 100) `bAddPictureToCollection` behEmptyPictureCollection))
 

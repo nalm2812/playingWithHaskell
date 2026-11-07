@@ -105,6 +105,18 @@ dt = 0.01--delta time. How much is incremented in the recursive call when calcul
 
 
 
+
+--wave behavior related
+
+
+addPoint :: Float -> Float -> Float -> (Float -> Float) -> Point
+addPoint t w h f= (t*w, h*f t)
+
+waveAux :: [Point] -> Float -> (Float -> Float) -> Float -> Path
+waveAux acc ti f t = if ti>=t then acc else waveAux (addPoint ti 10 100 f:acc) (ti+dt) f t
+
+
+
 --weird other section
 
 
@@ -411,6 +423,19 @@ fUseBounceSimple = fSimplerBounce 0 100 100 50 (constant (-9.8)) 0
 
 
 
+
+--wave behavior related
+
+
+fWaveRec :: [Point] -> Float -> Float -> Float -> (Float -> Float) -> Float -> (Picture, Behavior Picture)
+fWaveRec acc ti w h f t =if ti>=t then (line acc, Behavior (fWaveRec acc ti w h f)) else fWaveRec (addPoint ti w h f:acc) (ti+0.001) w h f t
+
+sTimeText :: Behavior String
+sTimeText =  Behavior b where b t = ("t = " ++ show t, behTimeText)--idk where else to put it
+
+
+
+
 --operators
 
 
@@ -467,6 +492,20 @@ behBool = lift1 (\t -> abs((sin (t*pi))-1) < 1e-10) time
 
 behSquareAround :: Behavior Picture
 behSquareAround = bTranslate (constant (-50)) (constant (-50)) (bSquare (constant 200))
+
+
+
+
+--wave behavior related
+
+
+behLargeSinWave :: Behavior Picture
+behLargeSinWave = Behavior b where b _ = (line (waveAux [] 0 sin (60*5)), behLargeSinWave)--this is more for debugging
+
+--also more for debugging
+--there is a trace here
+behALotOfCircles :: Behavior Picture
+behALotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux" ( if counter==101 then acc else aux (bCombinePictures acc (bTranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))
 
 
 
@@ -551,6 +590,22 @@ behNoLagBounce = bProperBounceWithSquare (constant 0) (constant 100) (constant 5
 
 behSmallBall :: Behavior Picture
 behSmallBall = bHorizontalBounce (constant 0) (constant 300) (constant 10) 40 42
+
+
+--wave behavior related
+
+
+behSinWave :: Behavior Picture
+behSinWave = Behavior b where b= fWaveRec [] 0 10 100 sin--this is very slow iirc
+
+behTimeTransformTestSinWave :: Behavior Picture
+behTimeTransformTestSinWave = timeTransform behSinWave (time |* constant 5)
+
+behMassiveCircleZoom :: Behavior Picture
+behMassiveCircleZoom = bZoom behALotOfCircles--for debugging
+
+behTimeText :: Behavior Picture
+behTimeText = bText sTimeText
 
 
 --others
@@ -906,35 +961,26 @@ currentT = unsafePerformIO $ newIORef 0
 --bounce :: Behavior Float -> Behavior Float
 
 
-addPoint :: Float -> Float -> Float -> (Float -> Float) -> Point
-addPoint t w h f= (t*w, h*f t)
+
 --sinWave :: Float -> Float -> Float -> Path
 --pointAux :: Float -> Float -> [Point] -> [Point]
 --pointAux t ti acc = if ti>=t then acc else pointAux t (ti+1) ((addPoint t):acc)
-waveRec :: [Point] -> Float -> Float -> Float -> (Float -> Float) -> Float -> (Picture, Behavior Picture)
-waveRec acc ti w h f t =if ti>=t then (line acc, Behavior (waveRec acc ti w h f)) else waveRec (addPoint ti w h f:acc) (ti+0.001) w h f t
---sinWave = sinAux [] 0
-behSinWave :: Behavior Picture
-behSinWave = Behavior b where b= waveRec [] 0 10 100 sin
-timeTransformTestSinWave :: Behavior Picture
-timeTransformTestSinWave = timeTransform behSinWave (time |* constant 5)
 
-waveAux :: [Point] -> Float -> (Float -> Float) -> Float -> Path
+--sinWave = sinAux [] 0
+
 --sinAux _ _ _ | trace "sinAux called" False = undefined
 --sinAux acc ti t = trace ("sinAux called") (if ti>=t then acc else sinAux (addPoint ti 10 100:acc) (ti+dt) t)
-waveAux acc ti f t = if ti>=t then acc else waveAux (addPoint ti 10 100 f:acc) (ti+dt) f t
-largeSinWave :: Behavior Picture
-largeSinWave = Behavior b where b _ = (line (waveAux [] 0 sin (60*5)), largeSinWave)
 
-aLotOfCircles :: Behavior Picture
-aLotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux" ( if counter==101 then acc else aux (bCombinePictures acc (bTranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))
-massiveCircleZoom :: Behavior Picture
-massiveCircleZoom = bZoom aLotOfCircles
 
-timeText :: Behavior String
-timeText =  Behavior b where b t = ("t = " ++ show t, timeText)
-behTimeText :: Behavior Picture
-behTimeText = bText timeText
+
+
+
+
+
+
+
+
+
 
 circleAux counter = bTranslate (constant (counter*30)) (constant 0) (bZoom (bCircle (constant 67)))
 

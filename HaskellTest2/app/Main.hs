@@ -61,6 +61,14 @@ at (Behavior b) t = fst (b t)--produces the value of Behavior `a` at Time `t`
 occ :: Event a -> (Float, a)
 occ (Event t a) = (t,a)
 
+--first parameter is the behavior that the behavior starts out as
+--second parameter is the event where the behavior changes
+--so at the saved time of the event, the first behavior changes into the behavior stored inside the event (second behavior)
+--result is a behavior that does what is listed above
+--e.g. first parameter is `a`, second parameter is `Event(t,b)`, so the resulting behavior starts out as `a` until `t` where it then becomes `b`
+untilB :: Behavior a -> Event (Behavior a) -> Behavior a
+untilB b e =  Behavior c where c t = let (te, b') = occ e in if t <= te then (at b t, Behavior c) else (at b' t, Behavior c)
+
 time :: Behavior Float
 time = Behavior (\t -> (t, time))--call on the current time inside the animation
 
@@ -479,8 +487,7 @@ behCircleFilledZoom = bDoubleZoom behCircleFill80--circle has radius 80
 
 
 
-untilB :: Behavior a -> Event (Behavior a) -> Behavior a
-untilB b e =  Behavior c where c t = let (te, b') = occ e in if t <= te then (at b t, Behavior c) else (at b' t, Behavior c)
+
 eventRectangle :: Event (Behavior Picture)
 eventRectangle = Event 10 behRectangleZoom
 

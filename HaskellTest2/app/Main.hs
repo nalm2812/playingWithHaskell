@@ -125,11 +125,6 @@ bSinWiggleMoveLocation x = bWiggleMoveLocation x fWiggleMotion
 
 --combining pictures functions
 
---adds a Behavior picture to a Behavior of a collection of pictures and returns Behavior of a collection
---note that it does not return a `Behavior Picture` that can be executed
-bAddPictureToCollection :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
-bAddPictureToCollection = lift2 (:)
-
 --turns a Behavior [Picture] into a Behavior Picture
 --basically turns a collection of pictures into a single picture that can be executed
 bCollectionToPicture :: Behavior [Picture] -> Behavior Picture
@@ -139,6 +134,13 @@ bCollectionToPicture = lift1 pictures
 bCombinePictures :: Behavior Picture -> Behavior Picture -> Behavior Picture
 bCombinePictures a b = bCollectionToPicture (a |: (b |: behEmptyPictureCollection))
 
+
+
+--operators
+--adds a Behavior picture to a Behavior of a collection of pictures and returns Behavior of a collection
+--note that it does not return a `Behavior Picture` that can be executed
+(|:) :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
+(|:) = lift2 (:)
 
 
 
@@ -205,7 +207,7 @@ behWiggleSquare = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMoti
 --right wiggle uses cos curve and x=100
 --both wiggles have max of 100
 behTwoWiggle :: Behavior Picture
-behTwoWiggle = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100) `bAddPictureToCollection` (behWiggleAnimationLocationCos (constant 100) (constant 100) `bAddPictureToCollection` behEmptyPictureCollection))
+behTwoWiggle = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: behEmptyPictureCollection))
 
 
 
@@ -222,8 +224,7 @@ behTwoWiggle = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (c
 
 
 
-(|:) :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
-(|:) = lift2 (:)
+
 twoWiggleNew :: Behavior Picture
 twoWiggleNew = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: behEmptyPictureCollection))
 wiggleOne = bSinWiggleMoveLocation (constant (-100)) (constant 100)

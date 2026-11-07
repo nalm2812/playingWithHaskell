@@ -8,39 +8,33 @@ import Graphics.Gloss.Interface.IO.Animate
 import GHC.IORef
 import System.IO.Unsafe (unsafePerformIO)
 import Data.IORef (atomicWriteIORef)
---print (show (abs(1.9999994e-3-0) < 1e-10))
+
 
 main :: IO ()
+
+
 main = do
-        usedBehavior <- newIORef behLongerBounce--if dt is extremely low it wouldnt run
-        let sample t =
-                        atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use))
+        usedBehavior <- newIORef behWiggleTest--this is where I insert the behavior I want to run
+        let sample t = atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use))--sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
+        --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
         animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white sample controllerSetRedraw
 
-
-
-
+--data types
 
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
-circleDraw :: Picture
-circleDraw = Circle 80
-drawPicture :: Float -> Picture
-drawPicture number = scale value value circleDraw where value = abs (5*sin (number/5 ))
---behDraw :: Behavior Picture
-value :: Float -> Float
-value number =abs (sin number)
---behDraw = let test b t = (scale (value t) (value t) circleDraw, b) in Behavior(test behDraw)
 
-wiggleTrue :: Float -> IO Float
-wiggleTrue t = (do print (show t)
-                   return (sin (pi*t)))
-wiggleFalse :: Float -> IO Float
-wiggleFalse t = (do return (sin (pi*t)))
-wiggle :: Float -> IO Float
-wiggle t = do if abs((sin (pi*t)-1)) < 1e-10 then wiggleTrue t else wiggleFalse t
+
+circle80 :: Picture
+circle80 = Circle 80
+
+
+wiggleValue :: Float -> Float
+wiggleValue number =abs (sin number)
+wiggle :: Float -> Float
+wiggle t = sin (pi*t)
 wiggleRange :: Float -> Float -> Float -> Picture
-wiggleRange hi lo t = translate 0 (lo + (hi-lo) * ((unsafePerformIO (wiggle t))+1)/2) circleDraw
+wiggleRange hi lo t = translate 0 (lo + (hi-lo) * (wiggle t+1)/2) circle80
 
 lift1 :: (a -> b) -> Behavior a -> Behavior b
 lift1 f (Behavior fa) = Behavior fb where fb t = let(a,ba) = fa t in (f a, lift1 f ba)
@@ -57,7 +51,7 @@ bscale :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Pictu
 bscale = lift3 scale
 behCircle :: Behavior Float -> Behavior Picture
 behCircle = lift1 Circle
-behCircle80 = constant circleDraw
+behCircle80 = constant circle80
 at :: Behavior a -> (Float -> a)
 --at (Behavior b) = f where f t = let(a,_)=b t in a
 at (Behavior b) t = fst (b t)
@@ -69,14 +63,13 @@ time = Behavior (\t -> (t, time))
 
 
 behZoom :: Behavior Picture -> Behavior Picture
-behZoom = bscale (lift1 value time) (lift1 value time)
+behZoom = bscale (lift1 wiggleValue time) (lift1 wiggleValue time)
 behCircleZoom :: Behavior Picture
 behCircleZoom = behZoom behCircle80
 
-unsafeWiggle :: Float -> Float
-unsafeWiggle t = unsafePerformIO (wiggle t)
+
 behWiggleMotion :: Behavior Float
-behWiggleMotion = lift1 unsafeWiggle time
+behWiggleMotion = lift1 wiggle time
 btranslate ::  Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 btranslate = lift3 translate
 behWiggleRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture

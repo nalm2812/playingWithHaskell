@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behColor--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behLongerBounce--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -266,6 +266,9 @@ bDoubleZoom p = timeTransform (bZoom p) (time |* constant 2)--speeds it up by 2
 bSpin :: Behavior Picture -> Behavior Picture
 bSpin = bRotate time--continuously rotates a given picture by constantly rotating with the time
 
+bAbs :: Behavior Float -> Behavior Float
+bAbs = lift1 abs
+
 
 
 --please do not use these, these functions are either useless or dangerous
@@ -339,6 +342,24 @@ fLongerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                                (yHit,- (reciprocity * vHit)))--also isnt run
                   collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
                                         (y >=* maxVal &&* (v >=* constant 0))) t0
+
+fUseLongerBounce :: Behavior Float
+fUseLongerBounce = fLongerBounce (constant 0) (constant 500) 400 100 (constant (-9.8)) 0
+
+fSimplerBounce :: Float -> Float -> Float -> Float -> p -> Float -> Behavior Float
+fSimplerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
+
+                      start t0 (y0,v0) = y `untilB` (doBounce +=> start)--as if it calls start right here
+
+                          where y = constant y0 |+ (v |* bAbs (time |- constant t0))--calculate the behavior picture inside here
+                                v = constant v0--am i supposed to sample here?
+                                reciprocity = 0.8
+
+                                doBounce = snapshot collide (bPair y v) ==> snd ==> \ (yHit, vHit) ->
+                                                               (yHit,- (1 * (reciprocity * vHit)))--how is the time noted here? whats with the 0.2
+                                collide = predicate ((y <=* constant minVal &&* (v <=* constant 0)) ||*
+                                                      (y >=* constant maxVal &&* (v >=* constant 0))) t0
+
 
 
 
@@ -452,6 +473,14 @@ behSecondWiggle = bCosWiggleMoveLocation (constant 100) (constant 100)
 behPredicate :: Behavior Picture
 behPredicate = untilB behWiggle eventPredicate
 
+
+
+
+
+--bounce related stuff
+
+behLongerBounce :: Behavior Picture
+behLongerBounce = bTranslate (constant 0) fUseLongerBounce (bCircle (constant 50))
 
 
 
@@ -776,43 +805,18 @@ currentT = unsafePerformIO $ newIORef 0
 
 
 
-useLongerBounce = fLongerBounce (constant 0) (constant 500) 400 100 (constant (-9.8)) 0
-behLongerBounce = bTranslate (constant 0) useLongerBounce (bCircle (constant 50))
+
+
 
 
 --distanceTraveled (Behavior v) = Behavior b where b t =  (fst (v t) * t, distanceTraveled (Behavior v))
-behAbs = lift1 abs
-simplerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-                      start t0 (y0,v0) = y `untilB` (doBounce +=> start)--as if it calls start right here
-
-                          where y = constant y0 |+ (v |* behAbs (time |- constant t0))--calculate the behavior picture inside here
-                                v = constant v0--am i supposed to sample here?
-                                reciprocity = 0.8
-
-                                doBounce = snapshot collide (bPair y v) ==> snd ==> \ (yHit, vHit) ->
-                                                               (yHit,- (1 * (reciprocity * vHit)))--how is the time noted here? whats with the 0.2
-                                collide = predicate ((y <=* constant minVal &&* (v <=* constant 0)) ||*
-                                                      (y >=* constant maxVal &&* (v >=* constant 0))) t0
-
-changeBounce a b reciprocity = (a, constant (-1) |* constant reciprocity |* b)
-noSnapshot minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
-
-                                 start t0 (y0,v0) = y `untilB` (doBounce +=> start)
-
-                                     where y = y0 |+ (v |* behAbs (time |- constant t0))--calculate the behavior picture inside here
-                                           v = v0
-                                           reciprocity = 0.8
-
-                                           doBounce = collide -=> changeBounce y v reciprocity
-                                           collide = predicate ((y <=* minVal &&* (v<=*constant 0)) ||*
-                                                                 (y >=* maxVal &&* (v>=*constant 0))) t0
 
 behBounce :: Behavior Picture
 useBounce :: Behavior Float
 useBounce = fBounce (constant 0) (constant 100) 90 (-50) (constant (-9.8)) 0
 behBounce = bTranslate (constant 0) useBounce (bCircle (constant 50))
-useBounceSimple = simplerBounce 0 100 100 50 (constant (-9.8)) 0
+useBounceSimple = fSimplerBounce 0 100 100 50 (constant (-9.8)) 0
 behSimplerBounce = bTranslate (constant 0) useBounceSimple (bCircle (constant 50))
 
 noSnapshotBounce = noSnapshot (constant 0) (constant 100) (constant 100) (constant 50) (constant (-9.8)) 0

@@ -245,12 +245,6 @@ bGrowingLineWithFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
 --bounce related stuff
 
 
-fIntegral :: Behavior Float -> Float -> Behavior Float
-fIntegral b t0 = Behavior (fIntRec b t0 0)
-
-fIntRec :: Behavior Float -> Float -> Float -> Float -> (Float, Behavior Float)
-fIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (fIntRec (Behavior b) ti a)) else fIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
-
 --takes two behaviors and turns them into one behavior that contains the contents of both behaviors in a tuple
 bPair :: Behavior a -> Behavior a -> Behavior (a,a)
 bPair (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba, bb) = b t in  ((aa,ba), bPair ab bb)
@@ -307,9 +301,52 @@ fWiggleWithRange  = lift3 wiggleWithRange
 
 
 
+--bounce related stuff
+
+
+fIntegral :: Behavior Float -> Float -> Behavior Float
+fIntegral b t0 = Behavior (fIntRec b t0 0)
+
+fIntRec :: Behavior Float -> Float -> Float -> Float -> (Float, Behavior Float)
+fIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (fIntRec (Behavior b) ti a)) else fIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
+
+fBounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
+fBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
+
+        start t0 (y0,v0) =
+                     y `untilB` ( doBounce +=> start)--start and untilB are called less
+
+            where y = constant y0 |+(fIntegral v t0--calculate the behavior picture inside here
+                  v = constant v0 |+ fIntegral g t0--seperate integral function so prints are easier to read, figure out what ti is in integral
+                  reciprocity = 0.8
+
+                  doBounce =  snapshot collide (bPair y v) ==> snd ==> (\ (yHit, vHit) ->
+                               (yHit,- (reciprocity * vHit)))--also isnt run
+                  collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
+                                        (y >=* maxVal &&* (v >=* constant 0))) t0
+
+fLongerBounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
+fLongerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
+
+        start t0 (y0,v0) =
+                     y `untilB` ( doBounce +=> start)--start and untilB are called less
+
+            where y = constant y0 |+ fIntegral v t0--calculate the behavior picture inside here
+                  v = constant v0 |+ fIntegral g t0--seperate integral function so prints are easier to read, figure out what ti is in integral
+                  reciprocity = 0.97
+
+                  doBounce =  snapshot collide (bPair y v) ==> snd ==> (\ (yHit, vHit) ->
+                               (yHit,- (reciprocity * vHit)))--also isnt run
+                  collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
+                                        (y >=* maxVal &&* (v >=* constant 0))) t0
+
+
+
+
 
 
 --operators
+
 
 --these can e.g. be used for timeTransform
 (|*) :: Behavior Float -> Behavior Float -> Behavior Float
@@ -737,35 +774,9 @@ currentT = unsafePerformIO $ newIORef 0
 
 
 
-bounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
-bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-        start t0 (y0,v0) =
-                     y `untilB` ( doBounce +=> start)--start and untilB are called less
 
-            where y = constant y0 |+ (fIntegral v t0)--calculate the behavior picture inside here
-                  v = constant v0 |+ (fIntegral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
-                  reciprocity = 0.8
-
-                  doBounce =  snapshot collide (bPair y v) ==> snd ==> (\ (yHit, vHit) ->
-                               (yHit,- (reciprocity * vHit)))--also isnt run
-                  collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
-                                        (y >=* maxVal &&* (v >=* constant 0))) t0
-longerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
-
-        start t0 (y0,v0) =
-                     y `untilB` ( doBounce +=> start)--start and untilB are called less
-
-            where y = constant y0 |+ (fIntegral v t0)--calculate the behavior picture inside here
-                  v = constant v0 |+ (fIntegral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
-                  reciprocity = 0.97
-
-                  doBounce =  snapshot collide (bPair y v) ==> snd ==> (\ (yHit, vHit) ->
-                               (yHit,- (reciprocity * vHit)))--also isnt run
-                  collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
-                                        (y >=* maxVal &&* (v >=* constant 0))) t0
-
-useLongerBounce = longerBounce (constant 0) (constant 500) 400 100 (constant (-9.8)) 0
+useLongerBounce = fLongerBounce (constant 0) (constant 500) 400 100 (constant (-9.8)) 0
 behLongerBounce = bTranslate (constant 0) useLongerBounce (bCircle (constant 50))
 
 
@@ -799,7 +810,7 @@ noSnapshot minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
 behBounce :: Behavior Picture
 useBounce :: Behavior Float
-useBounce = bounce (constant 0) (constant 100) 90 (-50) (constant (-9.8)) 0
+useBounce = fBounce (constant 0) (constant 100) 90 (-50) (constant (-9.8)) 0
 behBounce = bTranslate (constant 0) useBounce (bCircle (constant 50))
 useBounceSimple = simplerBounce 0 100 100 50 (constant (-9.8)) 0
 behSimplerBounce = bTranslate (constant 0) useBounceSimple (bCircle (constant 50))
@@ -823,7 +834,7 @@ properBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  
 iGiveUp :: Behavior Float -> Float
 iGiveUp min = at min 0
 uhhhh min = max (iGiveUp min)
-properBounce min max r v start = let properStart = uhhhh min start in bTranslate (constant 0) (bounce min max properStart v (constant (-9.8)) 0) (bCircle r)
+properBounce min max r v start = let properStart = uhhhh min start in bTranslate (constant 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
 properBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 properBounceWithSquare min max r v start= bCombinePictures (properBounce min max r v start) (properSquare min max r)
 squareLengthForBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
@@ -837,7 +848,7 @@ testProperBounce = properBounceWithSquare (constant 50) (constant 200) (constant
 horizontalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 horizontalBounceWithSquare min max r v start = bCombinePictures (horizontalBounce min max r v start) (horizontalSquare min max r)
 horizontalBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-horizontalBounce min max r v start = let properStart = uhhhh min start in bTranslate (bounce min max properStart v (constant 0) 0) (bounce min max properStart v (constant (-9.8)) 0) (bCircle r)
+horizontalBounce min max r v start = let properStart = uhhhh min start in bTranslate (fBounce min max properStart v (constant 0) 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
 testHorizontalBounce :: Behavior Picture
 testHorizontalBounce = horizontalBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 horizontalSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture

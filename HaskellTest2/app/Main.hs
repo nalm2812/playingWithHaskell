@@ -484,6 +484,10 @@ eventRectangle = Event 10 behRectangleZoom--at time 10 the behavior is behRectan
 
 
 
+--debugging stuff
+----------------------------------------------------------------------------------------------------------------------------------------------
+testPrint :: (Float, Behavior Picture)
+testPrint = occ predicateEvent--i just wanted to print out the tuple of the predicateEvent
 
 
 
@@ -535,7 +539,7 @@ behBool :: Behavior Bool
 behBool = lift1 (\t -> abs((sin (t*pi))-1) < 1e-10) time
 testPredicate :: Behavior Picture
 predicateEvent = predicate behBool 5 -=> behWiggleSquare
-testPrint = occ predicateEvent
+
 testPredicate = untilB behWiggle predicateEvent
 
 

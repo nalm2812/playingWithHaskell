@@ -127,7 +127,7 @@ bRhombus :: Behavior Float -> Behavior Picture
 bRhombus l = bLine (lift1 (\r -> [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]) l)--l is length of the sides of the rhombus
 
 bLine :: Behavior Path -> Behavior Picture
-bLine = lift1 line
+bLine = lift1 line--takes collection of points and creates a picture of a line
 
 bThickCircle :: Behavior Float -> Behavior Float -> Behavior Picture
 bThickCircle = lift2 thickCircle--line thickness
@@ -136,6 +136,12 @@ bThickCircle = lift2 thickCircle--line thickness
 --example of angle is an arc between 0 and 90 degrees
 bArc :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
 bArc = lift3 arc
+
+bThickArc :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
+bThickArc = lift4 thickArc--last parameter is line thickness
+
+bPolygon :: Behavior Path -> Behavior Picture
+bPolygon = lift1 polygon--takes path and make it a polygon by filling it. Probably also closes
 
 
 
@@ -259,6 +265,9 @@ bBlank = constant Graphics.Gloss.Blank--literally nothing
 behArc80 :: Behavior Picture
 behArc80 = bArc (constant 0) (constant 90) (constant 80)--angle is between 0 and 90 degrees
 
+behThickArc90 :: Behavior Picture
+behThickArc90 = bThickArc (constant 0) (constant 90) (constant 90) (constant 5)--angle is between 0 and 90 degrees with thickness of 5
+
 --Behavior Picture
 --These are executable or are specific tests
 ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -321,6 +330,11 @@ behThickCircleZoom = timeTransform (bZoom behThickCircle80) (time |* constant 2)
 behArcZoom :: Behavior Picture
 behArcZoom = timeTransform (bZoom behArc80) (time |* constant 2)
 
+--arc is between angle 0 and 90 and has radius 90
+--line thickness of 5
+--zoom sped up by 5
+behThickArcZoom :: Behavior Picture
+behThickArcZoom = timeTransform (bZoom behThickArc90) (time |* constant 5)
 
 
 
@@ -362,15 +376,10 @@ behArcZoom = timeTransform (bZoom behArc80) (time |* constant 2)
 
 
 
-bPolygon :: Behavior Path -> Behavior Picture
-bPolygon = lift1 polygon
 
-bThickArc :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-bThickArc = lift4 thickArc
-thickArc80 :: Behavior Picture
-thickArc80 = bThickArc (constant 0) (constant 90) (constant 90) (constant 5)
-thickArcZoom :: Behavior Picture
-thickArcZoom = timeTransform (bZoom thickArc80) (time |* constant 5)
+
+
+
 
 bText :: Behavior String -> Behavior Picture
 bText = lift1 text

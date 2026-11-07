@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behTwoWiggle--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behRhombusZoom--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -104,7 +104,10 @@ bTranslate ::  Behavior Float -> Behavior Float -> Behavior Picture -> Behavior 
 bTranslate = lift3 translate--moves shape from default, which is (0,0)
 
 bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
-bRotate = lift2 rotate--rotates by the given Behavior Float in degrees
+bRotate = lift2 rotate--rotates a given picure by the given Behavior Float in degrees
+
+bSpin :: Behavior Picture -> Behavior Picture
+bSpin = bRotate time--continuously rotates a given picture by constantly rotating with the time
 
 --shapes
 
@@ -226,13 +229,13 @@ behWiggleSquare = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMoti
 --right wiggle uses cos curve and x=100
 --both wiggles have max of 100
 behTwoWiggle :: Behavior Picture
-behTwoWiggle = bCollectionToPicture (behWiggleOne |: (behWiggleTwo |: behEmptyPictureCollection))
+behTwoWiggle = bCollectionToPicture (behFirstWiggle |: (behSecondWiggle |: behEmptyPictureCollection))
 
-behWiggleOne :: Behavior Picture
-behWiggleOne = bSinWiggleMoveLocation (constant (-100)) (constant 100)
+behFirstWiggle :: Behavior Picture
+behFirstWiggle = bSinWiggleMoveLocation (constant (-100)) (constant 100)
 
-behWiggleTwo :: Behavior Picture
-behWiggleTwo = bCosWiggleMoveLocation (constant 100) (constant 100)
+behSecondWiggle :: Behavior Picture
+behSecondWiggle = bCosWiggleMoveLocation (constant 100) (constant 100)
 
 --others
 
@@ -240,40 +243,41 @@ behWiggleTwo = bCosWiggleMoveLocation (constant 100) (constant 100)
 behCircleZoom :: Behavior Picture
 behCircleZoom = bZoom behCircle80--circle of 80 radius zooms
 
+--zoom is sped up by a factor of 5
+--length of side is 50
 behRhombusZoom :: Behavior Picture
-behRhombusZoom = timeTransform (bZoom behRhombus50) (time |* constant 5)--zoom is sped up by a factor of 5
+behRhombusZoom = timeTransform (bZoom behRhombus50) (time |* constant 5)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-behSpin :: Behavior Picture -> Behavior Picture
-behSpin = bRotate time
 behRhombuSpin :: Behavior Picture
-behRhombuSpin = behSpin (bRhombus (constant 50))
+behRhombuSpin = bSpin (bRhombus (constant 50))--length of side is 50
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 addPointToLine :: Behavior Point -> Behavior Path -> Behavior Path

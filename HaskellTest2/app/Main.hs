@@ -819,8 +819,8 @@ behBounce = bTranslate (constant 0) useBounce (bCircle (constant 50))
 useBounceSimple = fSimplerBounce 0 100 100 50 (constant (-9.8)) 0
 behSimplerBounce = bTranslate (constant 0) useBounceSimple (bCircle (constant 50))
 
-noSnapshotBounce = noSnapshot (constant 0) (constant 100) (constant 100) (constant 50) (constant (-9.8)) 0
-behNoSnapshot = bTranslate (constant 0) noSnapshotBounce (bCircle (constant 50))
+
+
 
 bFloatToString :: Behavior Float -> Behavior String
 bFloatToString (Behavior b) = Behavior c where c t = let (ab, bb) = b t in (show ab, bFloatToString bb)

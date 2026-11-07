@@ -109,7 +109,11 @@ bTranslatedWiggleRange hi lo wiggleFunction= bTranslate (constant 0) (bWiggleWit
 bWiggleMoveLocation :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
 bWiggleMoveLocation x wiggle hi = bTranslate x (constant 0) (bTranslatedWiggleRange hi (constant 0) wiggle behCircle80)
 
-
+--same as bWiggleMoveLocation but the wiggle motion is already determined to be using a sin curve
+--specifically, the wiggle motion is fWiggleMotion
+--can still determine x position and max height
+bSinWiggleMoveLocation :: Behavior Float -> Behavior Float -> Behavior Picture
+bSinWiggleMoveLocation x = bWiggleMoveLocation x fWiggleMotion
 
 
 
@@ -155,8 +159,7 @@ atTest = at behSinWave--tests if `at` returns the correct function that can be u
 
 
 
-behWiggleAnimationLocationSin :: Behavior Float -> Behavior Float -> Behavior Picture
-behWiggleAnimationLocationSin x = bWiggleMoveLocation x fWiggleMotion
+
 behWiggleTest :: Behavior Picture
 behWiggleTest = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behCircle80
 behWiggleTest2 = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behSquare80
@@ -169,15 +172,15 @@ emptyList :: Behavior [Picture]
 emptyList = constant []
 bpictures = lift1 pictures
 twoWiggle :: Behavior Picture
-twoWiggle = bpictures (addPicture (behWiggleAnimationLocationSin (constant (-100)) (constant 100)) (addPicture (behWiggleAnimationLocationCos (constant 100) (constant 100)) emptyList))
+twoWiggle = bpictures (addPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100)) (addPicture (behWiggleAnimationLocationCos (constant 100) (constant 100)) emptyList))
 combinePicture :: Behavior Picture -> Behavior Picture -> Behavior Picture
 combinePicture a b = bpictures (a |: (b |: emptyList))--first on only pictures and then lift
 
 (|:) :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
 (|:) = lift2 (:)
 twoWiggleNew :: Behavior Picture
-twoWiggleNew = bpictures (behWiggleAnimationLocationSin (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: emptyList))
-wiggleOne = behWiggleAnimationLocationSin (constant (-100)) (constant 100)
+twoWiggleNew = bpictures (bSinWiggleMoveLocation (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: emptyList))
+wiggleOne = bSinWiggleMoveLocation (constant (-100)) (constant 100)
 wiggleTwo = behWiggleAnimationLocationCos (constant 100) (constant 100)
 easierWiggle = bpictures (wiggleOne |: (wiggleTwo |: emptyList))
 

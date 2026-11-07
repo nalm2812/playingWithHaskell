@@ -135,6 +135,14 @@ bAddPictureToCollection = lift2 (:)
 bCollectionToPicture :: Behavior [Picture] -> Behavior Picture
 bCollectionToPicture = lift1 pictures
 
+--combines two pictures into one picture that can be executed
+bCombinePictures :: Behavior Picture -> Behavior Picture -> Behavior Picture
+bCombinePictures a b = bCollectionToPicture (a |: (b |: behEmptyPictureCollection))
+
+
+
+
+
 
 
 
@@ -212,8 +220,7 @@ behTwoWiggle = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (c
 
 
 
-combinePicture :: Behavior Picture -> Behavior Picture -> Behavior Picture
-combinePicture a b = bCollectionToPicture (a |: (b |: behEmptyPictureCollection))--first on only pictures and then lift
+
 
 (|:) :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
 (|:) = lift2 (:)
@@ -557,14 +564,14 @@ behBounceFloat = bText (bFloatToString useBounce)
 squareAround :: Behavior Picture
 squareAround = bTranslate (constant (-50)) (constant (-50)) (behSquare (constant 200))
 behBounceSquare :: Behavior Picture
-behBounceSquare = combinePicture squareAround behBounce
+behBounceSquare = bCombinePictures squareAround behBounce
 properBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 iGiveUp :: Behavior Float -> Float
 iGiveUp min = at min 0
 uhhhh min = max (iGiveUp min)
 properBounce min max r v start = let properStart = uhhhh min start in bTranslate (constant 0) (bounce min max properStart v (constant (-9.8)) 0) (bCircle r)
 properBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-properBounceWithSquare min max r v start= combinePicture (properBounce min max r v start) (properSquare min max r)
+properBounceWithSquare min max r v start= bCombinePictures (properBounce min max r v start) (properSquare min max r)
 squareLengthForBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
 squareLengthForBounce min max r = (max |- min) |+ (r |* constant 2)
 properSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
@@ -574,7 +581,7 @@ testProperBounce = properBounceWithSquare (constant 50) (constant 200) (constant
 
 
 horizontalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-horizontalBounceWithSquare min max r v start = combinePicture (horizontalBounce min max r v start) (horizontalSquare min max r)
+horizontalBounceWithSquare min max r v start = bCombinePictures (horizontalBounce min max r v start) (horizontalSquare min max r)
 horizontalBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 horizontalBounce min max r v start = let properStart = uhhhh min start in bTranslate (bounce min max properStart v (constant 0) 0) (bounce min max properStart v (constant (-9.8)) 0) (bCircle r)
 testHorizontalBounce :: Behavior Picture
@@ -612,7 +619,7 @@ largeSinWave :: Behavior Picture
 largeSinWave = Behavior b where b _ = (line (waveAux [] 0 sin (60*5)), largeSinWave)
 
 aLotOfCircles :: Behavior Picture
-aLotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux" ( if counter==101 then acc else aux (combinePicture acc (bTranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))
+aLotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux" ( if counter==101 then acc else aux (bCombinePictures acc (bTranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))
 massiveCircleZoom :: Behavior Picture
 massiveCircleZoom = bZoom aLotOfCircles
 
@@ -624,7 +631,7 @@ behTimeText = bText timeText
 circleAux counter = bTranslate (constant (counter*30)) (constant 0) (bZoom (bCircle (constant 67)))
 
 manyCirclesAux :: Float -> Behavior Picture -> Behavior Picture
-manyCirclesAux counter acc = if counter==20 then acc else manyCirclesAux (counter+1) (combinePicture acc (timeTransform (circleAux counter) (time |+ constant (counter+10))))
+manyCirclesAux counter acc = if counter==20 then acc else manyCirclesAux (counter+1) (bCombinePictures acc (timeTransform (circleAux counter) (time |+ constant (counter+10))))
 --(btranslate (constant (counter*10)) (constant 0) (behZoom (behCircle (constant 67))) (time |+ constant counter)))))
 
 manyCirclesIrregularZoom :: Behavior Picture
@@ -655,7 +662,7 @@ boolForCircle = lift1 (\t -> round t `mod` 5==0) time
 --ugh :: Picture -> Float -> Float -> (Float -> Picture, Behavior Picture)
 --ugh acc counter t= if t==counter then (acc, Behavior (ugh acc counter)) else ugh (addCircle
 aCircleLater :: Behavior Picture -> Float -> Event (Behavior Picture)
-aCircleLater b counter = predicate boolForCircle ((counter-1)*5+1) -=> combinePicture b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
+aCircleLater b counter = predicate boolForCircle ((counter-1)*5+1) -=> bCombinePictures b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
 homeeee :: Behavior Picture
 homeeee = behCircleZoom `untilB` aCircleLater behCircleZoom 1
 again :: Behavior Picture
@@ -668,7 +675,7 @@ testForever :: Behavior Picture
 testForever = foreverAux behCircleZoom 1 20
 
 betterCircleLater :: Behavior Picture -> Float -> Behavior Picture
-betterCircleLater b counter = combinePicture b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
+betterCircleLater b counter = bCombinePictures b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
 
 --forever :: Float -> Behavior (Behavior Picture) -> Behavior Picture
 {-forever t0 b = start t0 b where

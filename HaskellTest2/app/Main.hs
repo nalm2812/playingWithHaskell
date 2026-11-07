@@ -188,7 +188,7 @@ behWiggleSquare = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMoti
 
 --two circles of radius 80 wiggles
 behTwoWiggle :: Behavior Picture
-behTwoWiggle = bCollectionToPicture (bAddPictureToCollection (bSinWiggleMoveLocation (constant (-100)) (constant 100)) (behWiggleAnimationLocationCos (constant 100) (constant 100) `bAddPictureToCollection` behEmptyPictureCollection))
+behTwoWiggle = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100) `bAddPictureToCollection` (behWiggleAnimationLocationCos (constant 100) (constant 100) `bAddPictureToCollection` behEmptyPictureCollection))
 
 
 

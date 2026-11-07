@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behRectangleZoom--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behColor--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -108,6 +108,9 @@ bLineLoop = lift1 lineLoop
 
 bRectanglePath :: Behavior Float -> Behavior Float -> Behavior Path
 bRectanglePath = lift2 rectanglePath
+
+bColor :: Behavior Color -> Behavior Picture -> Behavior Picture
+bColor = lift2 color
 
 
 
@@ -317,6 +320,7 @@ behRectangle = bRectangle (constant 80) (constant 40)--length 80, height 40
 
 
 
+
 --please do not use these, these functions are either useless or dangerous
 
 
@@ -407,6 +411,9 @@ behSquareZoom = timeTransform (bZoom behSquare80) (time |* constant 2)
 behRectangleZoom :: Behavior Picture
 behRectangleZoom = bDoubleZoom behRectangle--length is 80 and height is 40
 
+behColor :: Behavior Picture
+behColor = bColor (constant red) behTwoWiggle--outline of the two circles in wiggle become bright red
+
 
 
 
@@ -416,6 +423,8 @@ behRectangleZoom = bDoubleZoom behRectangle--length is 80 and height is 40
 behSquareFillZoom :: Behavior Picture
 behSquareFillZoom = bDoubleZoom behSquareFill80--square is filled and its side has length 80
 
+behCircleFilledZoom :: Behavior Picture
+behCircleFilledZoom = bDoubleZoom behCircleFill80--circle has radius 80
 
 
 
@@ -458,11 +467,10 @@ behSquareFillZoom = bDoubleZoom behSquareFill80--square is filled and its side h
 
 
 
-behCircleFilledZoom = bDoubleZoom behCircleFill80
 
-bColor :: Behavior Color -> Behavior Picture -> Behavior Picture
-bColor = lift2 color
-colorTest = bColor (constant red) behTwoWiggle
+
+
+
 
 occ :: Event a -> (Float, a)
 occ (Event f a) = (f,a)

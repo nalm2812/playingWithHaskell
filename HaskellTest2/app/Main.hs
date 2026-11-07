@@ -246,7 +246,7 @@ bGrowingLineWithFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
 
 
 fIntegral :: Behavior Float -> Float -> Behavior Float
-fIntegral b t0 = Behavior (intRec b t0 0)
+fIntegral b t0 = Behavior (fIntRec b t0 0)
 
 --takes two behaviors and turns them into one behavior that contains the contents of both behaviors in a tuple
 bPair :: Behavior a -> Behavior a -> Behavior (a,a)
@@ -356,6 +356,9 @@ behSquare80 = bSquare (constant 80)--side is length 80
 behRectangle :: Behavior Picture
 behRectangle = bRectangle (constant 80) (constant 40)--length 80, height 40
 
+behBool :: Behavior Bool
+behBool = lift1 (\t -> abs((sin (t*pi))-1) < 1e-10) time
+
 
 
 
@@ -399,6 +402,20 @@ behFirstWiggle = bSinWiggleMoveLocation (constant (-100)) (constant 100)
 
 behSecondWiggle :: Behavior Picture
 behSecondWiggle = bCosWiggleMoveLocation (constant 100) (constant 100)
+
+
+
+
+
+--event stuff
+
+behPredicate :: Behavior Picture
+behPredicate = untilB behWiggle eventPredicate
+
+
+
+
+
 
 --others
 
@@ -457,6 +474,8 @@ behColor = bColor (constant red) behTwoWiggle--outline of the two circles in wig
 
 
 
+
+
 --please do not use these, these functions are either useless or dangerous
 
 behSquareFillZoom :: Behavior Picture
@@ -474,6 +493,9 @@ behCircleFilledZoom = bDoubleZoom behCircleFill80--circle has radius 80
 constEv :: Float -> a -> Event a
 constEv = Event--takes time and the value inside event e.g. behavior
 
+predicate :: Behavior Bool -> Float -> Event ()
+predicate (Behavior b) t = Event te () where te = let aux acc = if fst (b acc) then acc else aux (acc+dt) in aux t--predicate contains time when its true
+
 snapshot :: Event a -> Behavior b -> Event (a,b)
 snapshot e (Behavior b) = Event te (x, fst (b te)) where (te,x) = occ e
 
@@ -486,6 +508,9 @@ joinEv e = snd (occ e)
 
 eventRectangle :: Event (Behavior Picture)
 eventRectangle = Event 10 behRectangleZoom--at time 10 the behavior is behRectangleZoom
+
+eventPredicate :: Event (Behavior Picture)
+eventPredicate = predicate behBool 5 -=> behWiggleSquare
 
 
 
@@ -516,7 +541,7 @@ eventRectangle = Event 10 behRectangleZoom--at time 10 the behavior is behRectan
 --debugging stuff
 ----------------------------------------------------------------------------------------------------------------------------------------------
 printPredicateEvent :: (Float, Behavior Picture)
-printPredicateEvent = occ predicateEvent--i just wanted to print out the tuple of the predicateEvent
+printPredicateEvent = occ eventPredicate--i just wanted to print out the tuple of the predicateEvent
 
 
 
@@ -533,7 +558,7 @@ badIntRec2 :: Behavior2 Float -> Float -> Float -> Float -> Float
 badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + a'*dt) t where a' = b ti
 
 printInc :: Float
-printInc = fst (intRec (constant 9.8) 0.0001 0 0.0005)
+printInc = fst (fIntRec (constant 9.8) 0.0001 0 0.0005)
 
 badIntegral :: Behavior Float -> Float -> Behavior Float
 badIntegral b t0 = Behavior b1 where b1 t = (badIntRec b t0 0 t, badIntegral b t0)
@@ -552,7 +577,7 @@ wrongIntRec (Behavior b) ti a t = do
     --increment
     atomicWriteIORef prevAcc a
     atomicWriteIORef prevT0 ti
-    if ti>=t then let c t = (intRec (Behavior b) ti a t) in return (a, Behavior c) else wrongIntRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti
+    if ti>=t then let c t = (fIntRec (Behavior b) ti a t) in return (a, Behavior c) else wrongIntRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti
 
 prevT0 :: IORef Float
 prevT0 = unsafePerformIO $ newIORef 0
@@ -616,14 +641,6 @@ checkT0 t0 = do if abs(t0-0) < 1e-10 then print "its zero" else return ()
 
 
 
-predicate :: Behavior Bool -> Float -> Event ()
-predicate (Behavior b) t = Event te () where te = let aux acc = if fst (b acc) then acc else aux (acc+dt) in aux t--predicate contains time when its true
-behBool :: Behavior Bool
-behBool = lift1 (\t -> abs((sin (t*pi))-1) < 1e-10) time
-testPredicate :: Behavior Picture
-predicateEvent = predicate behBool 5 -=> behWiggleSquare
-
-testPredicate = untilB behWiggle predicateEvent
 
 
 
@@ -644,8 +661,11 @@ testPredicate = untilB behWiggle predicateEvent
 
 
 
-intRec :: Behavior Float -> Float -> Float -> Float -> (Float, Behavior Float)
-intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti a)) else intRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
+
+
+
+fIntRec :: Behavior Float -> Float -> Float -> Float -> (Float, Behavior Float)
+fIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (fIntRec (Behavior b) ti a)) else fIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 
 
 --Behavior c where c t = (badIntRec b t0 0 t, integral b t0)

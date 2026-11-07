@@ -521,6 +521,22 @@ behALotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux" ( if co
 
 
 
+
+
+--forever circle related
+
+
+bForeverAux :: Behavior Picture -> Float -> Float -> Behavior Picture
+bForeverAux b t amount= if t==amount then b `untilB` eventACircleLater b t else bForeverAux (b `untilB` eventACircleLater b t) (t+1) amount
+
+bBetterCircleLater :: Behavior Picture -> Float -> Behavior Picture
+bBetterCircleLater b counter = bCombinePictures b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
+
+
+
+
+
+
 --please do not use these, these functions are either useless or dangerous
 
 
@@ -529,6 +545,13 @@ behSquareFill80 = bFillPolygon behSquare80--square with fill that has length 80 
 
 behCircleFill80 :: Behavior Picture
 behCircleFill80 = bCircleFill behCircle80--radius 80
+
+
+
+
+
+
+
 
 
 
@@ -629,6 +652,27 @@ behManyCirclesIrregularZoom = bManyCirclesAux 1 (bZoom (bColor (constant red) (b
 
 behTimeText :: Behavior Picture
 behTimeText = bText sTimeText
+
+
+
+
+--forever circle related
+
+
+behHomeeee :: Behavior Picture
+behHomeeee = behCircleZoom `untilB` eventACircleLater behCircleZoom 1
+
+behAgain :: Behavior Picture
+behAgain = behHomeeee `untilB` eventACircleLater behHomeeee 2
+
+behForever :: Behavior Picture
+behForever = bForeverAux behCircleZoom 1 20
+
+
+
+
+
+
 
 
 --others
@@ -855,6 +899,36 @@ currentT = unsafePerformIO $ newIORef 0
 
 
 
+--sample debugging
+
+
+simpleBeh :: Behavior Float
+simpleBeh = Behavior b1
+   where
+   b2 t =(t - 5, Behavior b2)
+   b1 t | t < 5 = (t, Behavior b1)
+        | otherwise = (0, Behavior b2)
+
+sampleTest :: Behavior Picture
+sampleTest = bTranslate (simpleBeh|*constant 100) (constant 0) behCircle80
+
+simpleBeh2 :: Behavior Float
+simpleBeh2 = Behavior b1 where b1 t = (t, Behavior b1)
+
+predicateTest5 :: Behavior Bool
+predicateTest5 = lift1 (>= 5) time
+
+untilBTestPredicate :: Event (Behavior Float)
+untilBTestPredicate = predicate predicateTest5 0 -=> timeTransform simpleBeh2 (time |- constant 5)
+
+sampleTest2 :: Behavior Float
+sampleTest2 = simpleBeh `untilB` untilBTestPredicate
+
+sampleTest2Exe :: Behavior Picture
+sampleTest2Exe = bTranslate (sampleTest2|*constant 100) (constant 0) behCircle80
+
+
+
 
 
 
@@ -1039,19 +1113,13 @@ currentT = unsafePerformIO $ newIORef 0
 --ugh :: Picture -> Float -> Float -> (Float -> Picture, Behavior Picture)
 --ugh acc counter t= if t==counter then (acc, Behavior (ugh acc counter)) else ugh (addCircle
 
-homeeee :: Behavior Picture
-homeeee = behCircleZoom `untilB` eventACircleLater behCircleZoom 1
-again :: Behavior Picture
-again = homeeee `untilB` eventACircleLater homeeee 2
+
 --forever :: Behavior Picture
 --foreverAux :: Behavior Picture -> Float -> (Picture, Behavior Picture)
-foreverAux :: Behavior Picture -> Float -> Float -> Behavior Picture
-foreverAux b t amount= if t==amount then b `untilB` eventACircleLater b t else foreverAux (b `untilB` eventACircleLater b t) (t+1) amount
-testForever :: Behavior Picture
-testForever = foreverAux behCircleZoom 1 20
 
-betterCircleLater :: Behavior Picture -> Float -> Behavior Picture
-betterCircleLater b counter = bCombinePictures b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
+
+
+
 
 --forever :: Float -> Behavior (Behavior Picture) -> Behavior Picture
 {-forever t0 b = start t0 b where
@@ -1068,43 +1136,3 @@ addCircle p acc = p:acc
 idkAnymoreAux :: Behavior Picture -> (Picture -> Float) -> Float -> Float -> (Picture, Behavior Picture)
 idkAnymoreAux (Behavior b) acc counter t = if counter==t then (acc t, Behavior (idkAnymoreAux (Behavior b) acc counter)) else let (a', b') = b counter in idkAnymoreAux b'  -}
 
-
-
-simpleBeh = Behavior b1
-   where
-   b2 t =(t - 5, Behavior b2)
-   b1 t | t < 5 = (t, Behavior b1)
-        | otherwise = (0, Behavior b2)
-
-
-
-sampleTest :: Behavior Picture
-sampleTest = bTranslate (simpleBeh|*constant 100) (constant 0) behCircle80
-
-simpleBeh2 = Behavior b1 where b1 t = (t, Behavior b1)
-predicateTest5 = lift1 (>= 5) time
-untilBTestPredicate = predicate predicateTest5 0 -=> timeTransform simpleBeh2 (time |- constant 5)
-sampleTest2 = simpleBeh `untilB` untilBTestPredicate
-sampleTest2Exe = bTranslate (sampleTest2|*constant 100) (constant 0) behCircle80
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
---behPentagon :: Behavior Float -> Behavior Picture
---behPentagon l = bLineLoop (lift1 (\r -> [(0,0),(0,r),(r,r),(r,0),(0,0)]) l)

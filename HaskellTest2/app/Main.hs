@@ -168,7 +168,7 @@ behCircleZoom :: Behavior Picture
 behCircleZoom = bZoom behCircle80--circle of 80 radius zooms
 
 behEmptyPictureCollection :: Behavior [Picture]
-behEmptyPictureCollection = constant []
+behEmptyPictureCollection = constant []--used to start a collection of pictures
 
 --Behavior Picture
 --These are executable or are specific tests

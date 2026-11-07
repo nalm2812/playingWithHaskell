@@ -15,72 +15,130 @@ main :: IO ()
 
 main = do
         usedBehavior <- newIORef behWiggleTest--this is where I insert the behavior I want to run
-        let sample t = atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use))--sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
+
+        --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
-        animateIO (InWindow "Nice Window" (1000, 1000) (10, 10)) white sample controllerSetRedraw
+        let sample t = atomicModifyIORef' usedBehavior (\beh -> let extract (Behavior b) = b t; use = extract beh in (snd use, fst use))
+        --gloss' animate function, which means gloss takes care of the visual and how frequencently sampling happens
+        --controllerSetRedraw indicates that every time sample is executed the picture will be redrawn
+        --first tuple in window is for the size of the window, the second tuple is the position of the window on your own screen in regards to the top left corner I think???
+        animateIO (InWindow "Nice Window" (1000, 1000) (0, 0)) white sample controllerSetRedraw
 
 --data types
-
+----------------------------------------------------------------------------------------------------------------------------------------------
 data Behavior a = Behavior (Float -> (a, Behavior a))
 data Event a = Event Float a
 
-
-circle80 :: Picture
-circle80 = Circle 80
-
-
-wiggleValue :: Float -> Float
-wiggleValue number =abs (sin number)
-wiggle :: Float -> Float
-wiggle t = sin (pi*t)
-wiggleRange :: Float -> Float -> Float -> Picture
-wiggleRange hi lo t = translate 0 (lo + (hi-lo) * (wiggle t+1)/2) circle80
-
+--standard functions when working with behaviors and events
+----------------------------------------------------------------------------------------------------------------------------------------------
+--lift functions
+--lift functions "lifts" a regular functiona and makes it a function that accepts behehaviors
+--e.g. a function with type "Float -> Float" becomes "Behavior Float -> Behavior Float"
+--this function also handles simplifying behaviors
 lift1 :: (a -> b) -> Behavior a -> Behavior b
 lift1 f (Behavior fa) = Behavior fb where fb t = let(a,ba) = fa t in (f a, lift1 f ba)
+
 lift2 :: (a -> b -> c) -> Behavior a -> Behavior b -> Behavior c
 lift2 f (Behavior fa) (Behavior fb) = Behavior fc where fc t =  let(a,ba) = fa t; (b,bb) = fb t in (f a b, lift2 f ba bb)
+
 lift3 :: (a -> b -> c -> d) -> Behavior a -> Behavior b -> Behavior c -> Behavior d
 lift3 f (Behavior fa) (Behavior fb) (Behavior fc) = Behavior fd where fd t = let(a,ba) = fa t; (b,bb) = fb t; (c, bc) = fc t in (f a b c, lift3 f ba bb bc)
+
 lift4 :: (a -> b -> c -> d -> e) -> Behavior a -> Behavior b -> Behavior c -> Behavior d -> Behavior e
 lift4 f (Behavior fa) (Behavior fb) (Behavior fc) (Behavior fd) = Behavior fe where fe t = let(a,ba) = fa t; (b,bb) = fb t; (c, bc) = fc t; (d,bd) = fd t in (f a b c d, lift4 f ba bb bc bd)
-constant :: a -> Behavior a
-constant a = Behavior ab where ab _ = (a, constant a)
 
-bscale :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
-bscale = lift3 scale
-behCircle :: Behavior Float -> Behavior Picture
-behCircle = lift1 Circle
-behCircle80 = constant circle80
+
+constant :: a -> Behavior a
+constant a = Behavior ab where ab _ = (a, constant a)--constant
+
 at :: Behavior a -> (Float -> a)
---at (Behavior b) = f where f t = let(a,_)=b t in a
 at (Behavior b) t = fst (b t)
 
-atTest :: Float -> Picture
-atTest = at behSinWave
 time :: Behavior Float
 time = Behavior (\t -> (t, time))
 
 
-behZoom :: Behavior Picture -> Behavior Picture
-behZoom = bscale (lift1 wiggleValue time) (lift1 wiggleValue time)
+--non-behavior functions
+----------------------------------------------------------------------------------------------------------------------------------------------
+circle80 :: Picture
+circle80 = Circle 80
+
+--wiggle functions
+wiggleValue :: Float -> Float
+wiggleValue number =abs (sin number)
+
+wiggle :: Float -> Float
+wiggle t = sin (pi*t)
+
+wiggleWithRange :: Float -> Float -> Float -> Float
+wiggleWithRange hi lo wiggleValue = lo + (hi-lo) * (wiggleValue+1)/2
+
+
+
+
+--functions that take behaviors as argument
+----------------------------------------------------------------------------------------------------------------------------------------------
+bScale :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
+bScale = lift3 scale
+
+bCircle :: Behavior Float -> Behavior Picture
+bCircle = lift1 Circle
+
+bZoom :: Behavior Picture -> Behavior Picture
+bZoom = bScale (lift1 wiggleValue time) (lift1 wiggleValue time)
+
+bTranslate ::  Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
+bTranslate = lift3 translate
+
+--wiggle-related functions
+bWiggleWithRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
+bWiggleWithRange  = lift3 wiggleWithRange
+
+bTranslatedWiggleRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
+bTranslatedWiggleRange hi lo wiggleFunction= bTranslate (constant 0) (bWiggleWithRange hi lo wiggleFunction)
+
+--Behavior Float functions that are arguments for other functions
+--These floats change value depending on the time
+----------------------------------------------------------------------------------------------------------------------------------------------
+fWiggleMotion :: Behavior Float
+fWiggleMotion = lift1 wiggle time
+
+
+--standard behavior shapes with defined size that I often use
+
+
+behCircle80 :: Behavior Picture
+behCircle80 = constant circle80
+
 behCircleZoom :: Behavior Picture
-behCircleZoom = behZoom behCircle80
+behCircleZoom = bZoom behCircle80
 
 
-behWiggleMotion :: Behavior Float
-behWiggleMotion = lift1 wiggle time
-btranslate ::  Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
-btranslate = lift3 translate
-behWiggleRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
-behWiggleRange hi lo wiggle= btranslate (constant 0) (lift3 (\h l w-> l + (h-l) * (w+1)/2) hi lo wiggle)
+
+
+--Behavior Picture
+--These are executable or are specific tests
+----------------------------------------------------------------------------------------------------------------------------------------------
+atTest :: Float -> Picture
+atTest = at behSinWave
+
+
+
+
+
+
+
+
+
+
+
 behWiggleAnimationLocation :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-behWiggleAnimationLocation x wiggle factor = btranslate x (constant 0) (behWiggleRange factor (constant 0) wiggle behCircle80)
+behWiggleAnimationLocation x wiggle factor = bTranslate x (constant 0) (bTranslatedWiggleRange factor (constant 0) wiggle behCircle80)
 behWiggleAnimationLocationSin :: Behavior Float -> Behavior Float -> Behavior Picture
-behWiggleAnimationLocationSin x = behWiggleAnimationLocation x behWiggleMotion
+behWiggleAnimationLocationSin x = behWiggleAnimationLocation x fWiggleMotion
 behWiggleTest :: Behavior Picture
-behWiggleTest = behWiggleRange (constant 100) (constant 0) behWiggleMotion behCircle80
-behWiggleTest2 = behWiggleRange (constant 100) (constant 0) behWiggleMotion behSquare80
+behWiggleTest = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behCircle80
+behWiggleTest2 = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMotion behSquare80
 
 
 addPicture :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
@@ -117,7 +175,7 @@ behRhombus50 = behRhombus (constant 50)
 
 
 behRhombusZoom :: Behavior Picture
-behRhombusZoom = timeTransform (behZoom behRhombus50) (time |* constant 5)
+behRhombusZoom = timeTransform (bZoom behRhombus50) (time |* constant 5)
 bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
 bRotate = lift2 rotate
 behSpin :: Behavior Picture -> Behavior Picture
@@ -154,7 +212,7 @@ bThickCircle = lift2 thickCircle
 thickCircle80 :: Behavior Picture
 thickCircle80 = bThickCircle (constant 80) (constant 5)
 thickCircleZoom :: Behavior Picture
-thickCircleZoom = timeTransform (behZoom thickCircle80) (time |* constant 2)
+thickCircleZoom = timeTransform (bZoom thickCircle80) (time |* constant 2)
 
 bBlank = constant Graphics.Gloss.Blank
 bArc :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
@@ -162,7 +220,7 @@ bArc = lift3 arc
 arc80 :: Behavior Picture
 arc80 = bArc (constant 0) (constant 90) (constant 80)
 arcZoom :: Behavior Picture
-arcZoom = timeTransform (behZoom arc80) (time |* constant 2)
+arcZoom = timeTransform (bZoom arc80) (time |* constant 2)
 
 bPolygon :: Behavior Path -> Behavior Picture
 bPolygon = lift1 polygon
@@ -172,14 +230,14 @@ bThickArc = lift4 thickArc
 thickArc80 :: Behavior Picture
 thickArc80 = bThickArc (constant 0) (constant 90) (constant 90) (constant 5)
 thickArcZoom :: Behavior Picture
-thickArcZoom = timeTransform (behZoom thickArc80) (time |* constant 5)
+thickArcZoom = timeTransform (bZoom thickArc80) (time |* constant 5)
 
 bText :: Behavior String -> Behavior Picture
 bText = lift1 text
 helloWorld :: Behavior Picture
 helloWorld = bText (constant "Hello World")
 helloWorldZoom :: Behavior Picture
-helloWorldZoom = timeTransform (behZoom helloWorld) (time |* constant 2)
+helloWorldZoom = timeTransform (bZoom helloWorld) (time |* constant 2)
 
 bLineLoop :: Behavior Path -> Behavior Picture
 bLineLoop = lift1 lineLoop
@@ -188,9 +246,9 @@ behSquare l = bLineLoop (lift1 (\r -> [(0,0),(0,r),(r,r),(r,0),(0,0)]) l)
 behSquare80 :: Behavior Picture
 behSquare80 = behSquare (constant 80)
 behSquareZoom :: Behavior Picture
-behSquareZoom = timeTransform (behZoom behSquare80) (time |* constant 2)
+behSquareZoom = timeTransform (bZoom behSquare80) (time |* constant 2)
 imTired :: Behavior Picture -> Behavior Picture
-imTired p = timeTransform (behZoom p) (time |* constant 2)
+imTired p = timeTransform (bZoom p) (time |* constant 2)
 behFillPolygon :: Behavior Picture -> Behavior Picture
 behFillPolygon (Behavior p) = Behavior b where b t = let (Line a, ab) = p t in (polygon a, behFillPolygon ab)--use lift instead
 behSquareFill80 :: Behavior Picture
@@ -384,7 +442,7 @@ longerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                                         (y >=* maxVal &&* (v >=* constant 0))) t0
 
 useLongerBounce = longerBounce (constant 0) (constant 500) 400 100 (constant (-9.8)) 0
-behLongerBounce = btranslate (constant 0) useLongerBounce (behCircle (constant 50))
+behLongerBounce = bTranslate (constant 0) useLongerBounce (bCircle (constant 50))
 
 
 --distanceTraveled (Behavior v) = Behavior b where b t =  (fst (v t) * t, distanceTraveled (Behavior v))
@@ -418,12 +476,12 @@ noSnapshot minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 behBounce :: Behavior Picture
 useBounce :: Behavior Float
 useBounce = bounce (constant 0) (constant 100) 90 (-50) (constant (-9.8)) 0
-behBounce = btranslate (constant 0) useBounce (behCircle (constant 50))
+behBounce = bTranslate (constant 0) useBounce (bCircle (constant 50))
 useBounceSimple = simplerBounce 0 100 100 50 (constant (-9.8)) 0
-behSimplerBounce = btranslate (constant 0) useBounceSimple (behCircle (constant 50))
+behSimplerBounce = bTranslate (constant 0) useBounceSimple (bCircle (constant 50))
 
 noSnapshotBounce = noSnapshot (constant 0) (constant 100) (constant 100) (constant 50) (constant (-9.8)) 0
-behNoSnapshot = btranslate (constant 0) noSnapshotBounce (behCircle (constant 50))
+behNoSnapshot = bTranslate (constant 0) noSnapshotBounce (bCircle (constant 50))
 
 bFloatToString :: Behavior Float -> Behavior String
 bFloatToString (Behavior b) = Behavior c where c t = let (ab, bb) = b t in (show ab, bFloatToString bb)
@@ -434,20 +492,20 @@ behBounceFloat = bText (bFloatToString useBounce)
 
 
 squareAround :: Behavior Picture
-squareAround = btranslate (constant (-50)) (constant (-50)) (behSquare (constant 200))
+squareAround = bTranslate (constant (-50)) (constant (-50)) (behSquare (constant 200))
 behBounceSquare :: Behavior Picture
 behBounceSquare = combinePicture squareAround behBounce
 properBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 iGiveUp :: Behavior Float -> Float
 iGiveUp min = at min 0
 uhhhh min = max (iGiveUp min)
-properBounce min max r v start = let properStart = uhhhh min start in btranslate (constant 0) (bounce min max properStart v (constant (-9.8)) 0) (behCircle r)
+properBounce min max r v start = let properStart = uhhhh min start in bTranslate (constant 0) (bounce min max properStart v (constant (-9.8)) 0) (bCircle r)
 properBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 properBounceWithSquare min max r v start= combinePicture (properBounce min max r v start) (properSquare min max r)
 squareLengthForBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
 squareLengthForBounce min max r = (max |- min) |+ (r |* constant 2)
 properSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-properSquare min max r = btranslate (squareLengthForBounce min max r |/ constant (-2)) (min |- r) (behSquare (squareLengthForBounce min max r))
+properSquare min max r = bTranslate (squareLengthForBounce min max r |/ constant (-2)) (min |- r) (behSquare (squareLengthForBounce min max r))
 testProperBounce :: Behavior Picture
 testProperBounce = properBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 
@@ -455,11 +513,11 @@ testProperBounce = properBounceWithSquare (constant 50) (constant 200) (constant
 horizontalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 horizontalBounceWithSquare min max r v start = combinePicture (horizontalBounce min max r v start) (horizontalSquare min max r)
 horizontalBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-horizontalBounce min max r v start = let properStart = uhhhh min start in btranslate (bounce min max properStart v (constant 0) 0) (bounce min max properStart v (constant (-9.8)) 0) (behCircle r)
+horizontalBounce min max r v start = let properStart = uhhhh min start in bTranslate (bounce min max properStart v (constant 0) 0) (bounce min max properStart v (constant (-9.8)) 0) (bCircle r)
 testHorizontalBounce :: Behavior Picture
 testHorizontalBounce = horizontalBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 horizontalSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-horizontalSquare min max r = btranslate (constant (-1) |* min) (min |- r) (behSquare (squareLengthForBounce min max r))
+horizontalSquare min max r = bTranslate (constant (-1) |* min) (min |- r) (behSquare (squareLengthForBounce min max r))
 noLagBounce :: Behavior Picture
 noLagBounce = properBounceWithSquare (constant 0) (constant 100) (constant 50) 50 100
 
@@ -491,23 +549,23 @@ largeSinWave :: Behavior Picture
 largeSinWave = Behavior b where b _ = (line (waveAux [] 0 sin (60*5)), largeSinWave)
 
 aLotOfCircles :: Behavior Picture
-aLotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux" ( if counter==101 then acc else aux (combinePicture acc (btranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))
+aLotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux" ( if counter==101 then acc else aux (combinePicture acc (bTranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))
 massiveCircleZoom :: Behavior Picture
-massiveCircleZoom = behZoom aLotOfCircles
+massiveCircleZoom = bZoom aLotOfCircles
 
 timeText :: Behavior String
 timeText =  Behavior b where b t = ("t = " ++ show t, timeText)
 behTimeText :: Behavior Picture
 behTimeText = bText timeText
 
-circleAux counter = btranslate (constant (counter*30)) (constant 0) (behZoom (behCircle (constant 67)))
+circleAux counter = bTranslate (constant (counter*30)) (constant 0) (bZoom (bCircle (constant 67)))
 
 manyCirclesAux :: Float -> Behavior Picture -> Behavior Picture
 manyCirclesAux counter acc = if counter==20 then acc else manyCirclesAux (counter+1) (combinePicture acc (timeTransform (circleAux counter) (time |+ constant (counter+10))))
 --(btranslate (constant (counter*10)) (constant 0) (behZoom (behCircle (constant 67))) (time |+ constant counter)))))
 
 manyCirclesIrregularZoom :: Behavior Picture
-manyCirclesIrregularZoom = manyCirclesAux 1 (behZoom (bColor (constant red) (behCircle (constant 67))))
+manyCirclesIrregularZoom = manyCirclesAux 1 (bZoom (bColor (constant red) (bCircle (constant 67))))
 
 boolForCircle :: Behavior Bool
 boolForCircle = lift1 (\t -> round t `mod` 5==0) time
@@ -534,7 +592,7 @@ boolForCircle = lift1 (\t -> round t `mod` 5==0) time
 --ugh :: Picture -> Float -> Float -> (Float -> Picture, Behavior Picture)
 --ugh acc counter t= if t==counter then (acc, Behavior (ugh acc counter)) else ugh (addCircle
 aCircleLater :: Behavior Picture -> Float -> Event (Behavior Picture)
-aCircleLater b counter = predicate boolForCircle ((counter-1)*5+1) -=> combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom)
+aCircleLater b counter = predicate boolForCircle ((counter-1)*5+1) -=> combinePicture b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
 homeeee :: Behavior Picture
 homeeee = behCircleZoom `untilB` aCircleLater behCircleZoom 1
 again :: Behavior Picture
@@ -547,7 +605,7 @@ testForever :: Behavior Picture
 testForever = foreverAux behCircleZoom 1 20
 
 betterCircleLater :: Behavior Picture -> Float -> Behavior Picture
-betterCircleLater b counter = combinePicture b (btranslate (constant (counter*100)) (constant 0) behCircleZoom)
+betterCircleLater b counter = combinePicture b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
 
 --forever :: Float -> Behavior (Behavior Picture) -> Behavior Picture
 {-forever t0 b = start t0 b where
@@ -575,13 +633,13 @@ simpleBeh = Behavior b1
 
 
 sampleTest :: Behavior Picture
-sampleTest = btranslate (simpleBeh|*constant 100) (constant 0) behCircle80
+sampleTest = bTranslate (simpleBeh|*constant 100) (constant 0) behCircle80
 
 simpleBeh2 = Behavior b1 where b1 t = (t, Behavior b1)
 predicateTest5 = lift1 (>= 5) time
 untilBTestPredicate = predicate predicateTest5 0 -=> timeTransform simpleBeh2 (time |- constant 5)
 sampleTest2 = simpleBeh `untilB` untilBTestPredicate
-sampleTest2Exe = btranslate (sampleTest2|*constant 100) (constant 0) behCircle80
+sampleTest2Exe = bTranslate (sampleTest2|*constant 100) (constant 0) behCircle80
 
 
 

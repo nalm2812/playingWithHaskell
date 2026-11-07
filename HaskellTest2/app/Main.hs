@@ -296,6 +296,19 @@ bHorizontalSquare min max r = bTranslate (constant (-1) |* min) (min |- r) (bSqu
 
 
 
+--wave behavior related
+
+
+bCircleAux :: Float -> Behavior Picture
+bCircleAux counter = bTranslate (constant (counter*30)) (constant 0) (bZoom (bCircle (constant 67)))
+
+bManyCirclesAux :: Float -> Behavior Picture -> Behavior Picture
+bManyCirclesAux counter acc = if counter==20 then acc else bManyCirclesAux (counter+1) (bCombinePictures acc (timeTransform (bCircleAux counter) (time |+ constant (counter+10))))
+--(btranslate (constant (counter*10)) (constant 0) (behZoom (behCircle (constant 67))) (time |+ constant counter)))))
+
+
+
+
 --other
 
 
@@ -431,7 +444,9 @@ fWaveRec :: [Point] -> Float -> Float -> Float -> (Float -> Float) -> Float -> (
 fWaveRec acc ti w h f t =if ti>=t then (line acc, Behavior (fWaveRec acc ti w h f)) else fWaveRec (addPoint ti w h f:acc) (ti+0.001) w h f t
 
 sTimeText :: Behavior String
-sTimeText =  Behavior b where b t = ("t = " ++ show t, behTimeText)--idk where else to put it
+sTimeText =  Behavior b where b t = ("t = " ++ show t, sTimeText)--idk where else to put it
+
+
 
 
 
@@ -487,11 +502,8 @@ behSquare80 = bSquare (constant 80)--side is length 80
 behRectangle :: Behavior Picture
 behRectangle = bRectangle (constant 80) (constant 40)--length 80, height 40
 
-behBool :: Behavior Bool
-behBool = lift1 (\t -> abs((sin (t*pi))-1) < 1e-10) time
-
 behSquareAround :: Behavior Picture
-behSquareAround = bTranslate (constant (-50)) (constant (-50)) (bSquare (constant 200))
+behSquareAround = bTranslate (constant (-50)) (constant (-50)) (bSquare (constant 200))--this seems weird???????????????
 
 
 
@@ -555,8 +567,16 @@ behSecondWiggle = bCosWiggleMoveLocation (constant 100) (constant 100)
 
 --event stuff
 
+boolSaved :: Behavior Bool
+boolSaved = lift1 (\t -> abs((sin (t*pi))-1) < 1e-10) time
+
 behPredicate :: Behavior Picture
 behPredicate = untilB behWiggle eventPredicate
+
+boolForCircle :: Behavior Bool
+boolForCircle = lift1 (\t -> round t `mod` 5==0) time--idk where else to put it
+
+
 
 
 
@@ -603,6 +623,9 @@ behTimeTransformTestSinWave = timeTransform behSinWave (time |* constant 5)
 
 behMassiveCircleZoom :: Behavior Picture
 behMassiveCircleZoom = bZoom behALotOfCircles--for debugging
+
+behManyCirclesIrregularZoom :: Behavior Picture
+behManyCirclesIrregularZoom = bManyCirclesAux 1 (bZoom (bColor (constant red) (bCircle (constant 67))))
 
 behTimeText :: Behavior Picture
 behTimeText = bText sTimeText
@@ -701,9 +724,18 @@ eventRectangle :: Event (Behavior Picture)
 eventRectangle = Event 10 behRectangleZoom--at time 10 the behavior is behRectangleZoom
 
 eventPredicate :: Event (Behavior Picture)
-eventPredicate = predicate behBool 5 -=> behWiggleSquare
+eventPredicate = predicate boolSaved 5 -=> behWiggleSquare
 
 
+
+
+
+
+--forever circle related
+
+
+eventACircleLater :: Behavior Picture -> Float -> Event (Behavior Picture)
+eventACircleLater b counter = predicate boolForCircle ((counter-1)*5+1) -=> bCombinePictures b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
 
 
 --operators
@@ -982,17 +1014,8 @@ currentT = unsafePerformIO $ newIORef 0
 
 
 
-circleAux counter = bTranslate (constant (counter*30)) (constant 0) (bZoom (bCircle (constant 67)))
 
-manyCirclesAux :: Float -> Behavior Picture -> Behavior Picture
-manyCirclesAux counter acc = if counter==20 then acc else manyCirclesAux (counter+1) (bCombinePictures acc (timeTransform (circleAux counter) (time |+ constant (counter+10))))
---(btranslate (constant (counter*10)) (constant 0) (behZoom (behCircle (constant 67))) (time |+ constant counter)))))
 
-manyCirclesIrregularZoom :: Behavior Picture
-manyCirclesIrregularZoom = manyCirclesAux 1 (bZoom (bColor (constant red) (bCircle (constant 67))))
-
-boolForCircle :: Behavior Bool
-boolForCircle = lift1 (\t -> round t `mod` 5==0) time
 --problem comes from when you run start again its still true, so its forever true
 --relative time instead of absolute time
 
@@ -1015,16 +1038,15 @@ boolForCircle = lift1 (\t -> round t `mod` 5==0) time
 --zoomNoBeh t = scale value value (Circle 70) where value = abs (5*sin (t/5 ))
 --ugh :: Picture -> Float -> Float -> (Float -> Picture, Behavior Picture)
 --ugh acc counter t= if t==counter then (acc, Behavior (ugh acc counter)) else ugh (addCircle
-aCircleLater :: Behavior Picture -> Float -> Event (Behavior Picture)
-aCircleLater b counter = predicate boolForCircle ((counter-1)*5+1) -=> bCombinePictures b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
+
 homeeee :: Behavior Picture
-homeeee = behCircleZoom `untilB` aCircleLater behCircleZoom 1
+homeeee = behCircleZoom `untilB` eventACircleLater behCircleZoom 1
 again :: Behavior Picture
-again = homeeee `untilB` aCircleLater homeeee 2
+again = homeeee `untilB` eventACircleLater homeeee 2
 --forever :: Behavior Picture
 --foreverAux :: Behavior Picture -> Float -> (Picture, Behavior Picture)
 foreverAux :: Behavior Picture -> Float -> Float -> Behavior Picture
-foreverAux b t amount= if t==amount then b `untilB` aCircleLater b t else foreverAux (b `untilB` aCircleLater b t) (t+1) amount
+foreverAux b t amount= if t==amount then b `untilB` eventACircleLater b t else foreverAux (b `untilB` eventACircleLater b t) (t+1) amount
 testForever :: Behavior Picture
 testForever = foreverAux behCircleZoom 1 20
 

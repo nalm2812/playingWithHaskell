@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behSquareZoom--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behRectangleZoom--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -106,6 +106,9 @@ bRotate = lift2 rotate--rotates a given picure by the given Behavior Float in de
 bLineLoop :: Behavior Path -> Behavior Picture
 bLineLoop = lift1 lineLoop
 
+bRectanglePath :: Behavior Float -> Behavior Float -> Behavior Path
+bRectanglePath = lift2 rectanglePath
+
 
 
 
@@ -141,6 +144,10 @@ bText = lift1 text
 
 bSquare :: Behavior Float -> Behavior Picture
 bSquare l = bLineLoop (lift1 (\r -> [(0,0),(0,r),(r,r),(r,0),(0,0)]) l)--l is lenght of side
+
+bRectangle :: Behavior Float -> Behavior Float -> Behavior Picture
+bRectangle l h = bLineLoop (bRectanglePath l h)
+
 
 
 
@@ -227,7 +234,8 @@ bSpin = bRotate time--continuously rotates a given picture by constantly rotatin
 bFillPolygon :: Behavior Picture -> Behavior Picture
 bFillPolygon (Behavior p) = Behavior b where b t = let (Line a, ab) = p t in (polygon a, bFillPolygon ab)
 
-
+bCircleFill :: Behavior Picture -> Behavior Picture
+bCircleFill (Behavior p) = Behavior b where b t = let (Circle a, ab) = p t in (circleSolid a, bFillPolygon ab)
 
 
 
@@ -303,6 +311,9 @@ behHelloWorld = bText (constant "Hello World")
 behSquare80 :: Behavior Picture
 behSquare80 = bSquare (constant 80)--side is length 80
 
+behRectangle :: Behavior Picture
+behRectangle = bRectangle (constant 80) (constant 40)--length 80, height 40
+
 
 
 
@@ -311,6 +322,10 @@ behSquare80 = bSquare (constant 80)--side is length 80
 
 behSquareFill80 :: Behavior Picture
 behSquareFill80 = bFillPolygon behSquare80--square with fill that has length 80 side
+
+behCircleFill80 :: Behavior Picture
+behCircleFill80 = bCircleFill behCircle80--radius 80
+
 
 
 --Behavior Picture
@@ -389,76 +404,60 @@ behHelloWorldZoom = timeTransform (bZoom behHelloWorld) (time |* constant 2)--zo
 behSquareZoom :: Behavior Picture
 behSquareZoom = timeTransform (bZoom behSquare80) (time |* constant 2)
 
+behRectangleZoom :: Behavior Picture
+behRectangleZoom = bDoubleZoom behRectangle--length is 80 and height is 40
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+--please do not use these, these functions are either useless or dangerous
 
 behSquareFillZoom :: Behavior Picture
-behSquareFillZoom = bDoubleZoom behSquareFill80
-
-bRectanglePath :: Behavior Float -> Behavior Float -> Behavior Path
-bRectanglePath = lift2 rectanglePath
-behRectangle :: Behavior Float -> Behavior Float -> Behavior Picture
-behRectangle h l = bLineLoop (bRectanglePath h l)
-behRectangle80 :: Behavior Picture
-behRectangle80 = behRectangle (constant 80) (constant 40)
-behRectangleZoom :: Behavior Picture
-behRectangleZoom = bDoubleZoom behRectangle80
+behSquareFillZoom = bDoubleZoom behSquareFill80--square is filled and its side has length 80
 
 
-behCircleFill :: Behavior Picture -> Behavior Picture
-behCircleFill (Behavior p) = Behavior b where b t = let (Circle a, ab) = p t in (circleSolid a, bFillPolygon ab)
-behCircleFill80 :: Behavior Picture
-behCircleFill80 = behCircleFill behCircle80
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 behCircleFilledZoom = bDoubleZoom behCircleFill80
 
 bColor :: Behavior Color -> Behavior Picture -> Behavior Picture

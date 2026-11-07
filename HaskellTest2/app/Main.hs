@@ -59,6 +59,8 @@ time :: Behavior Float
 time = Behavior (\t -> (t, time))--call on the current time inside the animation
 
 
+
+
 --non-behavior functions
 ----------------------------------------------------------------------------------------------------------------------------------------------
 circle80 :: Picture
@@ -116,7 +118,15 @@ bWiggleMoveLocation x wiggle hi = bTranslate x (constant 0) (bTranslatedWiggleRa
 bSinWiggleMoveLocation :: Behavior Float -> Behavior Float -> Behavior Picture
 bSinWiggleMoveLocation x = bWiggleMoveLocation x fWiggleMotion
 
+--adds a Behavior picture to a Behavior of a collection of pictures and returns Behavior of a collection
+--note that it does not return a `Behavior Picture` that can be executed
+bAddPictureToCollection :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
+bAddPictureToCollection = lift2 (:)
 
+--turns a Behavior [Picture] into a Behavior Picture
+--basically turns a collection of pictures into a single picture that can be executed
+bCollectionToPicture :: Behavior [Picture] -> Behavior Picture
+bCollectionToPicture = lift1 pictures
 
 
 
@@ -183,24 +193,21 @@ behWiggleSquare = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMoti
 
 
 
-addPicture :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
-addPicture = lift2 (:)
-bpictures :: Behavior [Picture] -> Behavior Picture
+
 emptyList :: Behavior [Picture]
 emptyList = constant []
-bpictures = lift1 pictures
 twoWiggle :: Behavior Picture
-twoWiggle = bpictures (addPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100)) (addPicture (behWiggleAnimationLocationCos (constant 100) (constant 100)) emptyList))
+twoWiggle = bCollectionToPicture (bAddPictureToCollection (bSinWiggleMoveLocation (constant (-100)) (constant 100)) (bAddPictureToCollection (behWiggleAnimationLocationCos (constant 100) (constant 100)) emptyList))
 combinePicture :: Behavior Picture -> Behavior Picture -> Behavior Picture
-combinePicture a b = bpictures (a |: (b |: emptyList))--first on only pictures and then lift
+combinePicture a b = bCollectionToPicture (a |: (b |: emptyList))--first on only pictures and then lift
 
 (|:) :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
 (|:) = lift2 (:)
 twoWiggleNew :: Behavior Picture
-twoWiggleNew = bpictures (bSinWiggleMoveLocation (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: emptyList))
+twoWiggleNew = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: emptyList))
 wiggleOne = bSinWiggleMoveLocation (constant (-100)) (constant 100)
 wiggleTwo = behWiggleAnimationLocationCos (constant 100) (constant 100)
-easierWiggle = bpictures (wiggleOne |: (wiggleTwo |: emptyList))
+easierWiggle = bCollectionToPicture (wiggleOne |: (wiggleTwo |: emptyList))
 
 cosWiggleMotion :: Float -> Float
 cosWiggleMotion t = cos (pi*t)

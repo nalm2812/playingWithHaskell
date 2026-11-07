@@ -931,10 +931,6 @@ sampleTest2Exe = bTranslate (sampleTest2|*constant 100) (constant 0) behCircle80
 
 
 
-
-
-
-
 --code I used beforehand
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
@@ -949,64 +945,8 @@ sampleTest2Exe = bTranslate (sampleTest2|*constant 100) (constant 0) behCircle80
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+--rest of stuff
+----------------------------------------------------------------------------------------------------------------------------------------------
 
 --Behavior c where c t = (badIntRec b t0 0 t, integral b t0)
 --Behavior (intRec b t0 0)
@@ -1030,37 +970,7 @@ sampleTest2Exe = bTranslate (sampleTest2|*constant 100) (constant 0) behCircle80
 
 
 
-
-
-
-
-
-
-
 --distanceTraveled (Behavior v) = Behavior b where b t =  (fst (v t) * t, distanceTraveled (Behavior v))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1076,17 +986,6 @@ sampleTest2Exe = bTranslate (sampleTest2|*constant 100) (constant 0) behCircle80
 
 --sinAux _ _ _ | trace "sinAux called" False = undefined
 --sinAux acc ti t = trace ("sinAux called") (if ti>=t then acc else sinAux (addPoint ti 10 100:acc) (ti+dt) t)
-
-
-
-
-
-
-
-
-
-
-
 
 
 

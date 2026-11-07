@@ -103,6 +103,9 @@ bZoom = bScale (lift1 zoomValue time) (lift1 zoomValue time)
 bTranslate ::  Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 bTranslate = lift3 translate--moves shape from default, which is (0,0)
 
+
+
+
 --wiggle-related functions
 
 --takes shape and moves it in the y-axis by wiggleRange
@@ -123,6 +126,8 @@ bSinWiggleMoveLocation :: Behavior Float -> Behavior Float -> Behavior Picture
 bSinWiggleMoveLocation x = bWiggleMoveLocation x fWiggleMotion
 
 
+
+
 --combining pictures functions
 
 --turns a Behavior [Picture] into a Behavior Picture
@@ -137,6 +142,7 @@ bCombinePictures a b = bCollectionToPicture (a |: (b |: behEmptyPictureCollectio
 
 
 --operators
+
 --adds a Behavior picture to a Behavior of a collection of pictures and returns Behavior of a collection
 --note that it does not return a `Behavior Picture` that can be executed
 (|:) :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
@@ -207,29 +213,31 @@ behWiggleSquare = bTranslatedWiggleRange (constant 100) (constant 0) fWiggleMoti
 --right wiggle uses cos curve and x=100
 --both wiggles have max of 100
 behTwoWiggle :: Behavior Picture
-behTwoWiggle = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: behEmptyPictureCollection))
+behTwoWiggle = bCollectionToPicture (wiggleOne |: (wiggleTwo |: behEmptyPictureCollection))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-twoWiggleNew :: Behavior Picture
-twoWiggleNew = bCollectionToPicture (bSinWiggleMoveLocation (constant (-100)) (constant 100) |: (behWiggleAnimationLocationCos (constant 100) (constant 100) |: behEmptyPictureCollection))
+wiggleOne :: Behavior Picture
 wiggleOne = bSinWiggleMoveLocation (constant (-100)) (constant 100)
+
+wiggleTwo :: Behavior Picture
 wiggleTwo = behWiggleAnimationLocationCos (constant 100) (constant 100)
-easierWiggle = bCollectionToPicture (wiggleOne |: (wiggleTwo |: behEmptyPictureCollection))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 cosWiggleMotion :: Float -> Float
 cosWiggleMotion t = cos (pi*t)
@@ -345,7 +353,7 @@ behCircleFilledZoom = imTired behCircleFill80
 
 bColor :: Behavior Color -> Behavior Picture -> Behavior Picture
 bColor = lift2 color
-colorTest = bColor (constant red) easierWiggle
+colorTest = bColor (constant red) behTwoWiggle
 
 occ :: Event a -> (Float, a)
 occ (Event f a) = (f,a)

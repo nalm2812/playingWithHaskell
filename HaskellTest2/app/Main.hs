@@ -216,6 +216,18 @@ bCombinePictures a b = bCollectionToPicture (a |: (b |: behEmptyPictureCollectio
 (|:) :: Behavior Picture -> Behavior [Picture] -> Behavior [Picture]
 (|:) = lift2 (:)
 
+(<=*) :: Behavior Float -> Behavior Float -> Behavior Bool
+(<=*) = lift2 (<=)
+
+(>=*) :: Behavior Float -> Behavior Float -> Behavior Bool
+(>=*) = lift2 (>=)
+
+(&&*) :: Behavior Bool -> Behavior Bool -> Behavior Bool
+(&&*) = lift2 (&&)
+
+(||*) :: Behavior Bool -> Behavior Bool -> Behavior Bool
+(||*) = lift2 (||)
+
 
 --growing line
 
@@ -235,6 +247,10 @@ bGrowingLineWithFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
 
 fIntegral :: Behavior Float -> Float -> Behavior Float
 fIntegral b t0 = Behavior (intRec b t0 0)
+
+--takes two behaviors and turns them into one behavior that contains the contents of both behaviors in a tuple
+bPair :: Behavior a -> Behavior a -> Behavior (a,a)
+bPair (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba, bb) = b t in  ((aa,ba), bPair ab bb)
 
 
 --other
@@ -648,16 +664,8 @@ intRec (Behavior b) ti a t = if ti>=t then (a, Behavior (intRec (Behavior b) ti 
 --behIntegral f t0 = lift4 integral time t0 (constant (at f)) (constant 0.0001)--this is definetly wrong
 
 
-(<=*) :: Behavior Float -> Behavior Float -> Behavior Bool
-(<=*) = lift2 (<=)
-(>=*) :: Behavior Float -> Behavior Float -> Behavior Bool
-(>=*) = lift2 (>=)
-(&&*) :: Behavior Bool -> Behavior Bool -> Behavior Bool
-(&&*) = lift2 (&&)
-(||*) :: Behavior Bool -> Behavior Bool -> Behavior Bool
-(||*) = lift2 (||)
-pairB :: Behavior a -> Behavior a -> Behavior (a,a)
-pairB (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba, bb) = b t in  ((aa,ba), pairB ab bb)
+
+
 --bounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float -> Float -> Behavior Float
 
 {-# NOINLINE counter #-}
@@ -703,7 +711,7 @@ bounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                   v = constant v0 |+ (fIntegral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
                   reciprocity = 0.8
 
-                  doBounce =  snapshot collide (pairB y v) ==> snd ==> (\ (yHit, vHit) ->
+                  doBounce =  snapshot collide (bPair y v) ==> snd ==> (\ (yHit, vHit) ->
                                (yHit,- (reciprocity * vHit)))--also isnt run
                   collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
                                         (y >=* maxVal &&* (v >=* constant 0))) t0
@@ -716,7 +724,7 @@ longerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                   v = constant v0 |+ (fIntegral g t0)--seperate integral function so prints are easier to read, figure out what ti is in integral
                   reciprocity = 0.97
 
-                  doBounce =  snapshot collide (pairB y v) ==> snd ==> (\ (yHit, vHit) ->
+                  doBounce =  snapshot collide (bPair y v) ==> snd ==> (\ (yHit, vHit) ->
                                (yHit,- (reciprocity * vHit)))--also isnt run
                   collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
                                         (y >=* maxVal &&* (v >=* constant 0))) t0
@@ -735,7 +743,7 @@ simplerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                                 v = constant v0--am i supposed to sample here?
                                 reciprocity = 0.8
 
-                                doBounce = snapshot collide (pairB y v) ==> snd ==> \ (yHit, vHit) ->
+                                doBounce = snapshot collide (bPair y v) ==> snd ==> \ (yHit, vHit) ->
                                                                (yHit,- (1 * (reciprocity * vHit)))--how is the time noted here? whats with the 0.2
                                 collide = predicate ((y <=* constant minVal &&* (v <=* constant 0)) ||*
                                                       (y >=* constant maxVal &&* (v >=* constant 0))) t0

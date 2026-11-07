@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behArcZoom--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behHelloWorldZoom--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -97,21 +97,14 @@ wiggleWithRange hi lo wiggleMotion = lo + (hi-lo) * (wiggleMotion+1)/2
 bScale :: Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 bScale = lift3 scale--change size of shape via x and y factors. e.g. used for zoom
 
---takes shape and zooms in and out
---the shape is largest when its original size
---zooms via zoomValue (abs sin)
---zooms by scaling x and y by equal factor
-bZoom :: Behavior Picture -> Behavior Picture
-bZoom = bScale (lift1 zoomValue time) (lift1 zoomValue time)
-
 bTranslate ::  Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
 bTranslate = lift3 translate--moves shape from default, which is (0,0)
 
 bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
 bRotate = lift2 rotate--rotates a given picure by the given Behavior Float in degrees
 
-bSpin :: Behavior Picture -> Behavior Picture
-bSpin = bRotate time--continuously rotates a given picture by constantly rotating with the time
+bLineLoop :: Behavior Path -> Behavior Picture
+bLineLoop = lift1 lineLoop
 
 
 
@@ -143,7 +136,26 @@ bThickArc = lift4 thickArc--last parameter is line thickness
 bPolygon :: Behavior Path -> Behavior Picture
 bPolygon = lift1 polygon--takes path and make it a polygon by filling it. Probably also closes
 
+bText :: Behavior String -> Behavior Picture
+bText = lift1 text
 
+bSquare :: Behavior Float -> Behavior Picture
+bSquare l = bLineLoop (lift1 (\r -> [(0,0),(0,r),(r,r),(r,0),(0,0)]) l)--l is lenght of side
+
+
+
+--other
+
+
+--takes shape and zooms in and out
+--the shape is largest when its original size
+--zooms via zoomValue (abs sin)
+--zooms by scaling x and y by equal factor
+bZoom :: Behavior Picture -> Behavior Picture
+bZoom = bScale (lift1 zoomValue time) (lift1 zoomValue time)
+
+bSpin :: Behavior Picture -> Behavior Picture
+bSpin = bRotate time--continuously rotates a given picture by constantly rotating with the time
 
 
 --wiggle-related functions
@@ -268,6 +280,16 @@ behArc80 = bArc (constant 0) (constant 90) (constant 80)--angle is between 0 and
 behThickArc90 :: Behavior Picture
 behThickArc90 = bThickArc (constant 0) (constant 90) (constant 90) (constant 5)--angle is between 0 and 90 degrees with thickness of 5
 
+behHelloWorld :: Behavior Picture
+behHelloWorld = bText (constant "Hello World")
+
+behSquare80 :: Behavior Picture
+behSquare80 = bSquare (constant 80)--side is length 80
+
+
+
+
+
 --Behavior Picture
 --These are executable or are specific tests
 ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -336,6 +358,8 @@ behArcZoom = timeTransform (bZoom behArc80) (time |* constant 2)
 behThickArcZoom :: Behavior Picture
 behThickArcZoom = timeTransform (bZoom behThickArc90) (time |* constant 5)
 
+behHelloWorldZoom :: Behavior Picture
+behHelloWorldZoom = timeTransform (bZoom behHelloWorld) (time |* constant 2)--zoom sped up by 2
 
 
 
@@ -381,19 +405,13 @@ behThickArcZoom = timeTransform (bZoom behThickArc90) (time |* constant 5)
 
 
 
-bText :: Behavior String -> Behavior Picture
-bText = lift1 text
-helloWorld :: Behavior Picture
-helloWorld = bText (constant "Hello World")
-helloWorldZoom :: Behavior Picture
-helloWorldZoom = timeTransform (bZoom helloWorld) (time |* constant 2)
 
-bLineLoop :: Behavior Path -> Behavior Picture
-bLineLoop = lift1 lineLoop
-behSquare :: Behavior Float -> Behavior Picture
-behSquare l = bLineLoop (lift1 (\r -> [(0,0),(0,r),(r,r),(r,0),(0,0)]) l)
-behSquare80 :: Behavior Picture
-behSquare80 = behSquare (constant 80)
+
+
+
+
+
+
 behSquareZoom :: Behavior Picture
 behSquareZoom = timeTransform (bZoom behSquare80) (time |* constant 2)
 imTired :: Behavior Picture -> Behavior Picture
@@ -641,7 +659,7 @@ behBounceFloat = bText (bFloatToString useBounce)
 
 
 squareAround :: Behavior Picture
-squareAround = bTranslate (constant (-50)) (constant (-50)) (behSquare (constant 200))
+squareAround = bTranslate (constant (-50)) (constant (-50)) (bSquare (constant 200))
 behBounceSquare :: Behavior Picture
 behBounceSquare = bCombinePictures squareAround behBounce
 properBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
@@ -654,7 +672,7 @@ properBounceWithSquare min max r v start= bCombinePictures (properBounce min max
 squareLengthForBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
 squareLengthForBounce min max r = (max |- min) |+ (r |* constant 2)
 properSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-properSquare min max r = bTranslate (squareLengthForBounce min max r |/ constant (-2)) (min |- r) (behSquare (squareLengthForBounce min max r))
+properSquare min max r = bTranslate (squareLengthForBounce min max r |/ constant (-2)) (min |- r) (bSquare (squareLengthForBounce min max r))
 testProperBounce :: Behavior Picture
 testProperBounce = properBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 
@@ -666,7 +684,7 @@ horizontalBounce min max r v start = let properStart = uhhhh min start in bTrans
 testHorizontalBounce :: Behavior Picture
 testHorizontalBounce = horizontalBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 horizontalSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-horizontalSquare min max r = bTranslate (constant (-1) |* min) (min |- r) (behSquare (squareLengthForBounce min max r))
+horizontalSquare min max r = bTranslate (constant (-1) |* min) (min |- r) (bSquare (squareLengthForBounce min max r))
 noLagBounce :: Behavior Picture
 noLagBounce = properBounceWithSquare (constant 0) (constant 100) (constant 50) 50 100
 

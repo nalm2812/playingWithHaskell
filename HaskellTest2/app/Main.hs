@@ -77,13 +77,15 @@ atSinWave = at behSinWave--tests if `at` returns the correct function that can b
 wiggleMotion :: Float -> Float
 wiggleMotion t = sin (pi*t)--translate time to wiggle position
 
+cosWiggleMotion :: Float -> Float
+cosWiggleMotion t = cos (pi*t)--time to wiggle position with cos
+
 --same as wiggle but can decide min and max height
 --the wiggle parameter allows it to take a "wiggle function", used to determine whether the wiggle follows sin or cos or if the function is changed in any other way (like speed)
 wiggleWithRange :: Float -> Float -> Float -> Float
 wiggleWithRange hi lo wiggleMotion = lo + (hi-lo) * (wiggleMotion+1)/2
 
-cosWiggleMotion :: Float -> Float
-cosWiggleMotion t = cos (pi*t)--time to wiggle position with cos
+
 
 
 --functions that take behaviors as argument
@@ -126,7 +128,9 @@ bWiggleMoveLocation x wiggle hi = bTranslate x (constant 0) (bTranslatedWiggleRa
 bSinWiggleMoveLocation :: Behavior Float -> Behavior Float -> Behavior Picture
 bSinWiggleMoveLocation x = bWiggleMoveLocation x fWiggleMotion
 
-
+--same as above but with cos
+bCosWiggleMoveLocation :: Behavior Float -> Behavior Float -> Behavior Picture
+bCosWiggleMoveLocation x = bWiggleMoveLocation x fWiggleMotionCos
 
 
 --combining pictures functions
@@ -165,6 +169,10 @@ bCombinePictures a b = bCollectionToPicture (a |: (b |: behEmptyPictureCollectio
 --used to only define "the shape of the wiggle" (as in either sin or cos wave)
 fWiggleMotion :: Behavior Float
 fWiggleMotion = lift1 wiggleMotion time
+
+--same as above but with cos
+fWiggleMotionCos :: Behavior Float
+fWiggleMotionCos = lift1 cosWiggleMotion time
 
 --creates a behavior that receives a wiggleMotion and then creates a wiggle behavior with a max height and min height
 --this is the one that gets used by translate, fWiggleMotion isn't used for translate at all
@@ -220,7 +228,7 @@ behWiggleOne :: Behavior Picture
 behWiggleOne = bSinWiggleMoveLocation (constant (-100)) (constant 100)
 
 behWiggleTwo :: Behavior Picture
-behWiggleTwo = behWiggleAnimationLocationCos (constant 100) (constant 100)
+behWiggleTwo = bCosWiggleMoveLocation (constant 100) (constant 100)
 
 
 
@@ -241,16 +249,14 @@ behWiggleTwo = behWiggleAnimationLocationCos (constant 100) (constant 100)
 
 
 
-behWiggleMotionCos :: Behavior Float
-behWiggleMotionCos = lift1 cosWiggleMotion time
-behWiggleAnimationLocationCos :: Behavior Float -> Behavior Float -> Behavior Picture
-behWiggleAnimationLocationCos x = bWiggleMoveLocation x behWiggleMotionCos
 
 
-behRhombus :: Behavior Float -> Behavior Picture
-behRhombus n = bLine (lift1 (\r -> [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]) n)
+
+
+bRhombus :: Behavior Float -> Behavior Picture
+bRhombus n = bLine (lift1 (\r -> [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]) n)
 behRhombus50 :: Behavior Picture
-behRhombus50 = behRhombus (constant 50)
+behRhombus50 = bRhombus (constant 50)
 
 
 behRhombusZoom :: Behavior Picture
@@ -260,7 +266,7 @@ bRotate = lift2 rotate
 behSpin :: Behavior Picture -> Behavior Picture
 behSpin = bRotate time
 behRhombuSpin :: Behavior Picture
-behRhombuSpin = behSpin (behRhombus (constant 50))
+behRhombuSpin = behSpin (bRhombus (constant 50))
 
 
 addPointToLine :: Behavior Point -> Behavior Path -> Behavior Path

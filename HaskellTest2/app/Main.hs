@@ -316,7 +316,7 @@ fBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
         start t0 (y0,v0) =
                      y `untilB` ( doBounce +=> start)--start and untilB are called less
 
-            where y = constant y0 |+(fIntegral v t0--calculate the behavior picture inside here
+            where y = constant y0 |+ fIntegral v t0--calculate the behavior picture inside here
                   v = constant v0 |+ fIntegral g t0--seperate integral function so prints are easier to read, figure out what ti is in integral
                   reciprocity = 0.8
 

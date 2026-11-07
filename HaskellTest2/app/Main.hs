@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behThickCircleZoom--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behArcZoom--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -113,22 +113,31 @@ bRotate = lift2 rotate--rotates a given picure by the given Behavior Float in de
 bSpin :: Behavior Picture -> Behavior Picture
 bSpin = bRotate time--continuously rotates a given picture by constantly rotating with the time
 
-bLine :: Behavior Path -> Behavior Picture
-bLine = lift1 line
-
-bThickCircle :: Behavior Float -> Behavior Float -> Behavior Picture
-bThickCircle = lift2 thickCircle
 
 
 
 
 --shapes
 
+
 bCircle :: Behavior Float -> Behavior Picture
 bCircle = lift1 Circle--takes radius of circle as parameter
 
 bRhombus :: Behavior Float -> Behavior Picture
 bRhombus l = bLine (lift1 (\r -> [(-r,0),(0,r),(r,0),(0,-r),(-r,0)]) l)--l is length of the sides of the rhombus
+
+bLine :: Behavior Path -> Behavior Picture
+bLine = lift1 line
+
+bThickCircle :: Behavior Float -> Behavior Float -> Behavior Picture
+bThickCircle = lift2 thickCircle--line thickness
+
+--first two variable is the angle in degress where the arc is in between and the last variable is radius
+--example of angle is an arc between 0 and 90 degrees
+bArc :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
+bArc = lift3 arc
+
+
 
 
 --wiggle-related functions
@@ -244,9 +253,11 @@ behRhombus50 = bRhombus (constant 50)--length of sides are 50
 behThickCircle80 :: Behavior Picture
 behThickCircle80 = bThickCircle (constant 80) (constant 5)--thickness is 5
 
+bBlank :: Behavior Picture
+bBlank = constant Graphics.Gloss.Blank--literally nothing
 
-
-
+behArc80 :: Behavior Picture
+behArc80 = bArc (constant 0) (constant 90) (constant 80)--angle is between 0 and 90 degrees
 
 --Behavior Picture
 --These are executable or are specific tests
@@ -305,6 +316,10 @@ behGrowingLine = bGrowingLineWithFactor (constant 10)--grows with factor of 10
 behThickCircleZoom :: Behavior Picture
 behThickCircleZoom = timeTransform (bZoom behThickCircle80) (time |* constant 2)
 
+--arc is between angle 0 and 90 and has radius 80
+--zoom sped up by 2
+behArcZoom :: Behavior Picture
+behArcZoom = timeTransform (bZoom behArc80) (time |* constant 2)
 
 
 
@@ -343,13 +358,9 @@ behThickCircleZoom = timeTransform (bZoom behThickCircle80) (time |* constant 2)
 
 
 
-bBlank = constant Graphics.Gloss.Blank
-bArc :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-bArc = lift3 arc
-arc80 :: Behavior Picture
-arc80 = bArc (constant 0) (constant 90) (constant 80)
-arcZoom :: Behavior Picture
-arcZoom = timeTransform (bZoom arc80) (time |* constant 2)
+
+
+
 
 bPolygon :: Behavior Path -> Behavior Picture
 bPolygon = lift1 polygon

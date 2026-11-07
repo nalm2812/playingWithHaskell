@@ -35,6 +35,7 @@ data Event a = Event Float a
 --lift functions "lifts" a regular functiona and makes it a function that accepts behehaviors
 --e.g. a function with type "Float -> Float" becomes "Behavior Float -> Behavior Float"
 --this function also handles simplifying behaviors
+
 lift1 :: (a -> b) -> Behavior a -> Behavior b
 lift1 f (Behavior fa) = Behavior fb where fb t = let(a,ba) = fa t in (f a, lift1 f ba)
 
@@ -67,13 +68,14 @@ zoomValue :: Float -> Float
 zoomValue number =abs (sin number)--translate time to the size a shape should be in regards to zoom
 
 --wiggle functions
-wiggle :: Float -> Float
-wiggle t = sin (pi*t)--translate time to wiggle position
+
+wiggleMotion :: Float -> Float
+wiggleMotion t = sin (pi*t)--translate time to wiggle position
 
 --same as wiggle but can decide min and max height
 --the wiggle parameter allows it to take a "wiggle function", used to determine whether the wiggle follows sin or cos or if the function is changed in any other way (like speed)
 wiggleWithRange :: Float -> Float -> Float -> Float
-wiggleWithRange hi lo wiggle = lo + (hi-lo) * (wiggle+1)/2
+wiggleWithRange hi lo wiggleMotion = lo + (hi-lo) * (wiggleMotion+1)/2
 
 
 
@@ -97,11 +99,9 @@ bTranslate ::  Behavior Float -> Behavior Float -> Behavior Picture -> Behavior 
 bTranslate = lift3 translate--moves shape from default, which is (0,0)
 
 --wiggle-related functions
-bWiggleWithRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
-bWiggleWithRange  = lift3 wiggleWithRange
 
 bTranslatedWiggleRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture -> Behavior Picture
-bTranslatedWiggleRange hi lo wiggleFunction= bTranslate (constant 0) (bWiggleWithRange hi lo wiggleFunction)--takes shape and moves it in the y-axis by wiggleRange
+bTranslatedWiggleRange hi lo wiggleFunction= bTranslate (constant 0) (fWiggleWithRange hi lo wiggleFunction)--takes shape and moves it in the y-axis by wiggleRange
 
 --takes shape and creates wiggle behavior where the user can decide where on the x-axis the behavior occurs
 --does same as bTranslatedWiggleRange but with more stuff
@@ -123,8 +123,18 @@ bSinWiggleMoveLocation x = bWiggleMoveLocation x fWiggleMotion
 --Behavior Float functions that are arguments for other functions
 --These floats change value depending on the time
 ----------------------------------------------------------------------------------------------------------------------------------------------
+--wiggle-related functions
+
+
+--takes wiggle function and also adds time, so the value of wiggle depends on time
+--used to only define "the shape of the wiggle" (as in either sin or cos wave)
 fWiggleMotion :: Behavior Float
-fWiggleMotion = lift1 wiggle time--takes wiggle function and also adds time, so the value of wiggle depends on time
+fWiggleMotion = lift1 wiggleMotion time
+
+--creates a behavior that receives a wiggleMotion and then creates a wiggle behavior with a max height and min height
+--this is the one that gets used by translate, fWiggleMotion isn't used for translate at all
+fWiggleWithRange :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
+fWiggleWithRange  = lift3 wiggleWithRange
 
 
 

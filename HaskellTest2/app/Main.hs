@@ -444,61 +444,77 @@ behCircleFilledZoom = bDoubleZoom behCircleFill80--circle has radius 80
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+--Functions that return an event
+----------------------------------------------------------------------------------------------------------------------------------------------
 eventRectangle :: Event (Behavior Picture)
-eventRectangle = Event 10 behRectangleZoom
+eventRectangle = Event 10 behRectangleZoom--at time 10 the behavior is behRectangleZoom
+
+
+
+
+--operators
+
 
 (+=>) :: Event a -> (Float -> a -> b) -> Event b
 (+=>) e f =  Event te (f te x) where (te,x) = occ e
+
 (==>) :: Event a -> (a -> b) -> Event b
 (==>) ev g = ev +=> (\_ x -> g x)
+
 (*=>) :: Event a -> (Float -> b) -> Event b
 (*=>) ev h = ev +=> (\t _ -> h t)
+
 (-=>) :: Event a -> b -> Event b
 (-=>) ev x' = ev +=> (\_ _ -> x')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 constEv :: Float -> a -> Event a
 constEv = Event

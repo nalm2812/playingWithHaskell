@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behHelloWorldZoom--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behSquareZoom--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -144,19 +144,6 @@ bSquare l = bLineLoop (lift1 (\r -> [(0,0),(0,r),(r,r),(r,0),(0,0)]) l)--l is le
 
 
 
---other
-
-
---takes shape and zooms in and out
---the shape is largest when its original size
---zooms via zoomValue (abs sin)
---zooms by scaling x and y by equal factor
-bZoom :: Behavior Picture -> Behavior Picture
-bZoom = bScale (lift1 zoomValue time) (lift1 zoomValue time)
-
-bSpin :: Behavior Picture -> Behavior Picture
-bSpin = bRotate time--continuously rotates a given picture by constantly rotating with the time
-
 
 --wiggle-related functions
 
@@ -215,6 +202,36 @@ bGrowingLineWithFactor :: Behavior Float -> Behavior Picture
 bGrowingLineWithFactor = lift2 (\t f -> Line [(0,0), (f*t, 0)]) time
 
 
+
+
+--other
+
+
+--takes shape and zooms in and out
+--the shape is largest when its original size
+--zooms via zoomValue (abs sin)
+--zooms by scaling x and y by equal factor
+bZoom :: Behavior Picture -> Behavior Picture
+bZoom = bScale (lift1 zoomValue time) (lift1 zoomValue time)
+
+bDoubleZoom :: Behavior Picture -> Behavior Picture
+bDoubleZoom p = timeTransform (bZoom p) (time |* constant 2)--speeds it up by 2
+
+bSpin :: Behavior Picture -> Behavior Picture
+bSpin = bRotate time--continuously rotates a given picture by constantly rotating with the time
+
+
+
+--please do not use these, these functions are either useless or dangerous
+
+bFillPolygon :: Behavior Picture -> Behavior Picture
+bFillPolygon (Behavior p) = Behavior b where b t = let (Line a, ab) = p t in (polygon a, bFillPolygon ab)
+
+
+
+
+
+
 --Behavior Float functions that are arguments for other functions
 --These floats change value depending on the time
 ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -271,8 +288,8 @@ behRhombus50 = bRhombus (constant 50)--length of sides are 50
 behThickCircle80 :: Behavior Picture
 behThickCircle80 = bThickCircle (constant 80) (constant 5)--thickness is 5
 
-bBlank :: Behavior Picture
-bBlank = constant Graphics.Gloss.Blank--literally nothing
+behBlank :: Behavior Picture
+behBlank = constant Graphics.Gloss.Blank--literally nothing
 
 behArc80 :: Behavior Picture
 behArc80 = bArc (constant 0) (constant 90) (constant 80)--angle is between 0 and 90 degrees
@@ -288,6 +305,12 @@ behSquare80 = bSquare (constant 80)--side is length 80
 
 
 
+
+--please do not use these, these functions are either useless or dangerous
+
+
+behSquareFill80 :: Behavior Picture
+behSquareFill80 = bFillPolygon behSquare80--square with fill that has length 80 side
 
 
 --Behavior Picture
@@ -361,67 +384,66 @@ behThickArcZoom = timeTransform (bZoom behThickArc90) (time |* constant 5)
 behHelloWorldZoom :: Behavior Picture
 behHelloWorldZoom = timeTransform (bZoom behHelloWorld) (time |* constant 2)--zoom sped up by 2
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+--side have length 80
+--zoom sped up by 2
 behSquareZoom :: Behavior Picture
 behSquareZoom = timeTransform (bZoom behSquare80) (time |* constant 2)
-imTired :: Behavior Picture -> Behavior Picture
-imTired p = timeTransform (bZoom p) (time |* constant 2)
-behFillPolygon :: Behavior Picture -> Behavior Picture
-behFillPolygon (Behavior p) = Behavior b where b t = let (Line a, ab) = p t in (polygon a, behFillPolygon ab)--use lift instead
-behSquareFill80 :: Behavior Picture
-behSquareFill80 = behFillPolygon behSquare80
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 behSquareFillZoom :: Behavior Picture
-behSquareFillZoom = imTired behSquareFill80
+behSquareFillZoom = bDoubleZoom behSquareFill80
 
 bRectanglePath :: Behavior Float -> Behavior Float -> Behavior Path
 bRectanglePath = lift2 rectanglePath
@@ -430,14 +452,14 @@ behRectangle h l = bLineLoop (bRectanglePath h l)
 behRectangle80 :: Behavior Picture
 behRectangle80 = behRectangle (constant 80) (constant 40)
 behRectangleZoom :: Behavior Picture
-behRectangleZoom = imTired behRectangle80
+behRectangleZoom = bDoubleZoom behRectangle80
 
 
 behCircleFill :: Behavior Picture -> Behavior Picture
-behCircleFill (Behavior p) = Behavior b where b t = let (Circle a, ab) = p t in (circleSolid a, behFillPolygon ab)
+behCircleFill (Behavior p) = Behavior b where b t = let (Circle a, ab) = p t in (circleSolid a, bFillPolygon ab)
 behCircleFill80 :: Behavior Picture
 behCircleFill80 = behCircleFill behCircle80
-behCircleFilledZoom = imTired behCircleFill80
+behCircleFilledZoom = bDoubleZoom behCircleFill80
 
 bColor :: Behavior Color -> Behavior Picture -> Behavior Picture
 bColor = lift2 color

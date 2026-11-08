@@ -1089,6 +1089,7 @@ whenTrue = do x <- readIORef recCounter
               print x
               writeIORef recCounter (x+1)
 
+--note that whatever value of ti, t and a is used is from whatever is passed into the function as a parameter, not from a global variable
 tracking :: Float -> Float -> Float -> IO ()
 tracking ti t a = do
                      --if ti>1 then trackingTrue ti t else return ()            prints out t and ti when ti>1
@@ -1106,10 +1107,12 @@ tracking ti t a = do
                      --if true then prints out ti, t, recCounter and acc
                      --if (t<1&&(abs(ti-0)< 1e-10)) then print ("t0: " ++ show ti ++ " " ++ "t: " ++ show t ++ " counter: " ++ show x ++ " acc: " ++ show a) else return ()
 
+--prints out ti and t. ti and t come from the parameters of the function
 trackingTrue :: Float -> Float -> IO ()
 trackingTrue ti t = do print ("ti: " ++ show ti)
                        print ("t: " ++ show t)
 
+--changes currentT to the t that is passed into the function as a parameter and then prints out that t that is passed into the function
 tChange :: Integer -> IO ()
 tChange t = do writeIORef currentT t
                print t

@@ -1016,21 +1016,30 @@ printPredicateEvent = occ eventPredicate--i just wanted to print out the tuple o
 --bounce related
 
 
-badIntRec :: Behavior Float -> Float -> Float -> Float -> Float
-badIntRec (Behavior b) ti a t  = if ti>= t then a else badIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
+--intRec that doesn't handle memory leak and only returns the accumulated integral
+--not even a behavior
+--behavior does not get simplified
+fBadIntRec :: Behavior Float -> Float -> Float -> Float -> Float
+fBadIntRec (Behavior b) ti a t  = if ti>= t then a else fBadIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 
+--behavior that doesn't take account memory leaks by not simplifying behaviors
 data Behavior2 a = Behavior2 (Float -> a)
 
-badIntRec2 :: Behavior2 Float -> Float -> Float -> Float -> Float
-badIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else badIntRec2 (Behavior2 b) (ti+dt) (a + a'*dt) t where a' = b ti
+--like fBadIntRec but with Behavior2
+fBadIntRec2 :: Behavior2 Float -> Float -> Float -> Float -> Float
+fBadIntRec2 (Behavior2 b) ti a t  = if ti>= t then a else fBadIntRec2 (Behavior2 b) (ti+dt) (a + a'*dt) t where a' = b ti
 
 printInc :: Float
-printInc = fst (fIntRec (constant 9.8) 0.0001 0 0.0005)
+printInc = fst (fIntRec (constant 9.8) 0.0001 0 0.0005)--just a print to see how intRec would run if dt was small
 
-badIntegral :: Behavior Float -> Float -> Behavior Float
-badIntegral b t0 = Behavior b1 where b1 t = (badIntRec b t0 0 t, badIntegral b t0)
-integral2 :: Behavior2 Float -> Float -> Behavior2 Float
-integral2 b t0 = Behavior2 (badIntRec2 b t0 0)
+--integral with badIntRec
+--uses Behavior, not Behavior2
+fBadIntegral :: Behavior Float -> Float -> Behavior Float
+fBadIntegral b t0 = Behavior b1 where b1 t = (fBadIntRec b t0 0 t, fBadIntegral b t0)
+
+--integral with badIntRec2, so Behavior 2
+fIntegral2 :: Behavior2 Float -> Float -> Behavior2 Float
+fIntegral2 b t0 = Behavior2 (fBadIntRec2 b t0 0)
 
 
 

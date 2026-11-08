@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behSmallBall--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behTimeText--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -782,8 +782,9 @@ behAllBounce = bAlllBounceWithSquare (constant 50) (constant 200) (constant 100)
 behBetterBounceSquare :: Behavior Picture
 behBetterBounceSquare = bVerticalBounceWithSquare (constant 0) (constant 100) (constant 50) 50 100
 
---a bounce in all directions with no square where the shape is a small ball
+--a bounce in all directions where the shape is a small ball
 --since the ball is small, it bounces in a much more varied way
+--no square
 --the min is 0, max is 300, v starts at 40, starting position is 42
 --circle has radius 10
 behSmallBall :: Behavior Picture
@@ -793,18 +794,34 @@ behSmallBall = bAllBounce (constant 0) (constant 300) (constant 10) 40 42
 --wave behavior related
 
 
+--a growing sin wave of width 10 and height 100
+--slow if you are inpatient but you can see the growth
+--note this doesn't use dt
 behSinWave :: Behavior Picture
-behSinWave = Behavior b where b= fWaveRec [] 0 10 100 sin--this is very slow iirc
+behSinWave = Behavior b where b= fWaveRec [] 0 10 100 sin
 
+--behSinWave but 5 times faster
+--mainly tested stuff on this
+--note this doesn't use dt
 behTimeTransformTestSinWave :: Behavior Picture
 behTimeTransformTestSinWave = timeTransform behSinWave (time |* constant 5)
 
+--there is a trace
+--100 circles that are 10 apart that zoom as one picture
+--for debugging in regards to performance
 behMassiveCircleZoom :: Behavior Picture
-behMassiveCircleZoom = bZoom behALotOfCircles--for debugging
+behMassiveCircleZoom = bZoom behALotOfCircles
 
+--creates 19 zooming circles that are 30 to the right of each other
+--circles have radius 68
+--the circles dont zoom at the same time and have a different of 10 seconds in regards to timeTransform
+--all circles zoom at the same rate but are on different "stages" of the zoom, i.e. differnet points on the sin function
+--the circle at the origin has a red outline
 behManyCirclesIrregularZoom :: Behavior Picture
-behManyCirclesIrregularZoom = bManyCirclesAux 1 (bZoom (bColor (constant red) (bCircle (constant 67))))
+behManyCirclesIrregularZoom = bManyCirclesAux 1 (bZoom (bColor (constant red) (bCircle (constant 68))))
 
+--displays what the time is at the current moment (so how many seconds have passed)
+--in the format of "t = *insert time*"
 behTimeText :: Behavior Picture
 behTimeText = bText sTimeText
 

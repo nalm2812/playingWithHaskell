@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behSquareAround--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behPredicate--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -625,10 +625,11 @@ behSquare80 = bSquare (constant 80)--side is length 80
 behRectangle :: Behavior Picture
 behRectangle = bRectangle (constant 80) (constant 40)--length 80, height 40
 
---for the square around bounce
+--for the square around bounce where the values of bounce is behBounce
 --created to figure out what the values should be for the function
+--square has length 200 because the center travels 100 and then the radius is 50, so 100+50+50=200
 behSquareAround :: Behavior Picture
-behSquareAround = bTranslate (constant (-50)) (constant (-50)) (bSquare (constant 200))--this seems weird???????????????
+behSquareAround = bTranslate (constant (-50)) (constant (-50)) (bSquare (constant 200))
 
 
 
@@ -636,11 +637,14 @@ behSquareAround = bTranslate (constant (-50)) (constant (-50)) (bSquare (constan
 --wave behavior related
 
 
+--this was created to see how the program would behave performance-wise if there are a lot of points
+--basically behTimeTransformTestSinWave after a minute
 behLargeSinWave :: Behavior Picture
-behLargeSinWave = Behavior b where b _ = (line (waveAux [] 0 sin (60*5)), behLargeSinWave)--this is more for debugging
+behLargeSinWave = Behavior b where b _ = (line (waveAux [] 0 sin (60*5)), behLargeSinWave)
 
---also more for debugging
+--also more for debugging (look at performance)
 --there is a trace here
+--100 circles 10 apart and each have radius of 80
 behALotOfCircles :: Behavior Picture
 behALotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux" ( if counter==101 then acc else aux (bCombinePictures acc (bTranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))
 
@@ -650,6 +654,7 @@ behALotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux" ( if co
 
 
 --please do not use these, these functions are either useless or dangerous
+--they do technically work, but please dont
 
 
 behSquareFill80 :: Behavior Picture
@@ -702,12 +707,20 @@ behSecondWiggle = bCosWiggleMoveLocation (constant 100) (constant 100)
 
 --event stuff
 
+
+--this bool sees if sin (pi*t)==1
+--used to see if zoom is at the largest part or if a wiggle is at the top
+--the boolean is handled like this to ensure no floating point arithmetic error
 boolSaved :: Behavior Bool
 boolSaved = lift1 (\t -> abs(sin (t*pi)-1) < 1e-10) time
 
+--predicate test that changes the wiggle to be of a circle to a square the first time the wiggle reaches the top after 5 seconds
 behPredicate :: Behavior Picture
-behPredicate = untilB behWiggle eventPredicate
+behPredicate = behWiggle `untilB` eventPredicate
 
+--boolean that checks if t is divisible by 5
+--used if you want something to be true/happen every 5 seconds
+--need to use round because `t` is a float so otherwise this will never be true
 boolForCircle :: Behavior Bool
 boolForCircle = lift1 (\t -> round t `mod` 5==0) time--idk where else to put it
 

@@ -935,12 +935,21 @@ behCircleFilledZoom = bFasterZoom behCircleFill80--circle has radius 80
 constEv :: Float -> a -> Event a
 constEv = Event--takes time and the value inside event e.g. behavior
 
+--predicate contains time when the given boolean is true (that why it returns a Event (), because its only purpose is the time
+--second parameter is from when the predicate is valid (so basically from which point in time should predicate start checking from
+--figures out the time by recursively checking from t and then increments t by dt until it finds a point in time where the boolean is true
+--if never true then its an infinite loop
 predicate :: Behavior Bool -> Float -> Event ()
-predicate (Behavior b) t = Event te () where te = let aux acc = if fst (b acc) then acc else aux (acc+dt) in aux t--predicate contains time when its true
+predicate (Behavior b) t = Event te () where te = let aux acc = if fst (b acc) then acc else aux (acc+dt) in aux t
 
+--returns an event containing both the value of the event and the value of a behavior at the point in time where the event occurs
+--so if event ´a´ occurs at time `t`, then it checks what value behavior `b` had at `t`
+--the event returned also still has the time of when the given event occured
 snapshot :: Event a -> Behavior b -> Event (a,b)
 snapshot e (Behavior b) = Event te (x, fst (b te)) where (te,x) = occ e
 
+--if there is an event inside an event, it makes it to a normal event that can be used
+--used for event sequencing and for when the operators below are used, as sometimes it can create a result that would need a joinEv to "fix"
 joinEv :: Event (Event a) -> Event a
 joinEv e = snd (occ e)
 
@@ -951,6 +960,7 @@ joinEv e = snd (occ e)
 eventRectangle :: Event (Behavior Picture)
 eventRectangle = Event 10 behRectangleZoom--at time 10 the behavior is behRectangleZoom
 
+--the first time (sin t*pi)==1 (max value) after 5 seconds the behavior becomes behWiggleSquare
 eventPredicate :: Event (Behavior Picture)
 eventPredicate = predicate boolSaved 5 -=> behWiggleSquare
 
@@ -969,15 +979,21 @@ eventACircleLater b counter = predicate boolForCircle ((counter-1)*5+1) -=> bCom
 --operators
 
 
+--piping but with events
+--takes an event and applies a function on the values inside the event (time and the value) and returns an event
 (+=>) :: Event a -> (Float -> a -> b) -> Event b
 (+=>) e f =  Event te (f te x) where (te,x) = occ e
 
+--same as (+=>) but the function doesnt take the time value
 (==>) :: Event a -> (a -> b) -> Event b
 (==>) ev g = ev +=> (\_ x -> g x)
 
+--same as (+=>) but only time gets taken as a parameter
 (*=>) :: Event a -> (Float -> b) -> Event b
 (*=>) ev h = ev +=> (\t _ -> h t)
 
+--used for building an event with a predicate
+--creates an event that occurs at the same time as first parameter but contains the second parameter
 (-=>) :: Event a -> b -> Event b
 (-=>) ev x' = ev +=> (\_ _ -> x')
 

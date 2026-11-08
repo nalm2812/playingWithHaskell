@@ -301,12 +301,12 @@ bFloatToString (Behavior b) = Behavior c where c t = let (ab, bb) = b t in (show
 --v is starting velocity
 --g is assumed to be gravity (-9.8)
 --shape is assumed to be circle
-bBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-bBounce minY maxY r v start = let properStart = startBounceY minY start in bTranslate (constant 0) (fBounce minY maxY properStart v (constant (-9.8)) 0) (bCircle r)
+bVerticalBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
+bVerticalBounce minY maxY r v start = let properStart = startBounceY minY start in bTranslate (constant 0) (fBounce minY maxY properStart v (constant (-9.8)) 0) (bCircle r)
 
 --same as bProperBounce but creates a square around the bounce behavior so the circle collides inside the square
 bVerticalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-bVerticalBounceWithSquare minY maxY r v start= bCombinePictures (bBounce minY maxY r v start) (bBounceSquare minY maxY r)
+bVerticalBounceWithSquare minY maxY r v start= bCombinePictures (bVerticalBounce minY maxY r v start) (bBounceSquare minY maxY r)
 
 --calculates the length sqaure that should be drawn around bounce using the min and max y values and the radius of the circle
 --radius is used to calculate when the sides collide, as technically the min and max is for the center of the circle
@@ -341,9 +341,19 @@ bAllSquare minAll maxAll r = bTranslate (constant (-1) |* minAll) (minAll |- r) 
 --wave behavior related
 
 
+--for recursive function that keeps adds a circle 30 to the right
+--counter is for the amount of circles that have been added
+--all circles zoom and have a radius on 68
 bCircleAux :: Float -> Behavior Picture
-bCircleAux counter = bTranslate (constant (counter*30)) (constant 0) (bZoom (bCircle (constant 67)))
+bCircleAux counter = bTranslate (constant (counter*30)) (constant 0) (bZoom (bCircle (constant 68)))
 
+--creates 20 zooming circles that are 30 to the right of each other
+--circles have radius 68
+--acc is the behavior that contain all of these circles
+--the circles dont zoom at the same time and have a different of 10 seconds in regards to timeTransform
+--the more the circle is on the right the more "ahead" it is in its zoom
+--all circles zoom at the same rate but are on different "stages" of the zoom, i.e. differnet points on the sin function
+--counter is used to count the amount of circles, determine where the circle is placed and also determine the zoom of the circle
 bManyCirclesAux :: Float -> Behavior Picture -> Behavior Picture
 bManyCirclesAux counter acc = if counter==20 then acc else bManyCirclesAux (counter+1) (bCombinePictures acc (timeTransform (bCircleAux counter) (time |+ constant (counter+10))))
 --(btranslate (constant (counter*10)) (constant 0) (behZoom (behCircle (constant 67))) (time |+ constant counter)))))
@@ -361,8 +371,8 @@ bManyCirclesAux counter acc = if counter==20 then acc else bManyCirclesAux (coun
 bZoom :: Behavior Picture -> Behavior Picture
 bZoom = bScale (lift1 zoomValue time) (lift1 zoomValue time)
 
-bDoubleZoom :: Behavior Picture -> Behavior Picture
-bDoubleZoom p = timeTransform (bZoom p) (time |* constant 2)--speeds it up by 2
+bFasterZoom :: Behavior Picture -> Behavior Picture
+bFasterZoom p = timeTransform (bZoom p) (time |* constant 2)--speeds it up by 2
 
 bSpin :: Behavior Picture -> Behavior Picture
 bSpin = bRotate time--continuously rotates a given picture by constantly rotating with the time
@@ -765,7 +775,7 @@ behSquareZoom :: Behavior Picture
 behSquareZoom = timeTransform (bZoom behSquare80) (time |* constant 2)
 
 behRectangleZoom :: Behavior Picture
-behRectangleZoom = bDoubleZoom behRectangle--length is 80 and height is 40
+behRectangleZoom = bFasterZoom behRectangle--length is 80 and height is 40
 
 behColor :: Behavior Picture
 behColor = bColor (constant red) behTwoWiggle--outline of the two circles in wiggle become bright red
@@ -786,10 +796,10 @@ behColorPriorityTest = bColor (constant violet) behColor--this is red, i.e. the 
 --please do not use these, these functions are either useless or dangerous
 
 behSquareFillZoom :: Behavior Picture
-behSquareFillZoom = bDoubleZoom behSquareFill80--square is filled and its side has length 80
+behSquareFillZoom = bFasterZoom behSquareFill80--square is filled and its side has length 80
 
 behCircleFilledZoom :: Behavior Picture
-behCircleFilledZoom = bDoubleZoom behCircleFill80--circle has radius 80
+behCircleFilledZoom = bFasterZoom behCircleFill80--circle has radius 80
 
 
 

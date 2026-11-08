@@ -433,6 +433,12 @@ fWiggleWithRange  = lift3 wiggleWithRange
 --bounce related stuff
 
 
+--used in bounce to calculate the integral
+--b is the behavior that represents the function of the integral
+--t0 is the starting time from where the integral start
+--note that the acc in fIntRec is 0 as it represents the area under the curve, as this function is executed when a new integral is created
+--fIntRec is not given a `t` parameter so the contents is `Float -> (Float, Behavior Float)`
+--`t` is also inserted by sample
 fIntegral :: Behavior Float -> Float -> Behavior Float
 fIntegral b t0 = Behavior (fIntRec b t0 0)
 

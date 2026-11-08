@@ -469,8 +469,15 @@ fBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                   v = constant v0 |+ fIntegral g t0--behavior that contains the velocity and a given time, as velocity changes due to gravity/acceleration. Integral of acceleration is velocity
                   reciprocity = 0.8--velocity becomes 0.8 slower when collision
 
+                  --firstly doBounce takes the value of y and v at the time collision happens
+                  --then pipes it into snd so the () that comes from collide gets disregarded, resulting in an Event only containing (y,v)
+                  --afterwards, v gets multiplied with reciprocity and y stays the same, and these values are the contents of the event doBounce
+                  --reminder that ==> pipes the content of an Event into a function and returns an Event containing the result of that function
                   doBounce =  snapshot collide (bPair y v) ==> snd ==> (\ (yHit, vHit) ->
                                (yHit,- (reciprocity * vHit)))
+                  --y can be <= minVal and v has to be 0 or a negative number (the shape must be heading downwards)
+                  --y can also be >= maxVal and v has to be 0 or positive number (shape is heading upwards)
+                  --again, <= and >= are used to avoid float point arithmetic and also allows dt to be larger
                   collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
                                         (y >=* maxVal &&* (v >=* constant 0))) t0
 

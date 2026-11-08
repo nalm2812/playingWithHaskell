@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behSimplerBounce--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behSmallBall--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -753,21 +753,39 @@ behSimplerBounce :: Behavior Picture
 behSimplerBounce = bTranslate (constant 0) fUseSimpleBounce (bCircle (constant 50))
 
 
+--displays what the y value is supposed to be for the bounce
+--must be between 0-100
+--uses the values of behBounce/fUseBounce
 behBounceFloat :: Behavior Picture
 behBounceFloat = bText (bFloatToString fUseBounce)
 
+--behBounce with a square around
+--the circle is not in the middle of the square, but instead leaning towards the left side (so its touching the left side)
 behBounceSquare :: Behavior Picture
 behBounceSquare = bCombinePictures behSquareAround behBounce
 
-behProperBounce :: Behavior Picture
-behProperBounce = bVerticalBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
+--vertical bounce with square around where shape is in middle
+--circle with 100 radius
+--min is 50, max is 200, starting v is 70 and starting position is 0
+behVerticalBounce :: Behavior Picture
+behVerticalBounce = bVerticalBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 
-behHorizontalBounce :: Behavior Picture
-behHorizontalBounce = bAlllBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
+--bounce in all directions with square around where shape is in middle
+--circle with 100 radius
+--min is 50, max is 200, starting v is 70 and starting position is 0
+--there is slight lag when collision happen at the current moment
+behAllBounce :: Behavior Picture
+behAllBounce = bAlllBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 
-behNoLagBounce :: Behavior Picture
-behNoLagBounce = bVerticalBounceWithSquare (constant 0) (constant 100) (constant 50) 50 100
+--same as behBounceSquare but the circle is actually in the middle of the square
+--compared to behAllBounce there is no lag
+behBetterBounceSquare :: Behavior Picture
+behBetterBounceSquare = bVerticalBounceWithSquare (constant 0) (constant 100) (constant 50) 50 100
 
+--a bounce in all directions with no square where the shape is a small ball
+--since the ball is small, it bounces in a much more varied way
+--the min is 0, max is 300, v starts at 40, starting position is 42
+--circle has radius 10
 behSmallBall :: Behavior Picture
 behSmallBall = bAllBounce (constant 0) (constant 300) (constant 10) 40 42
 

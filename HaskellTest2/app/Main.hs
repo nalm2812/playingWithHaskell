@@ -625,6 +625,8 @@ behSquare80 = bSquare (constant 80)--side is length 80
 behRectangle :: Behavior Picture
 behRectangle = bRectangle (constant 80) (constant 40)--length 80, height 40
 
+--for the square around bounce
+--created to figure out what the values should be for the function
 behSquareAround :: Behavior Picture
 behSquareAround = bTranslate (constant (-50)) (constant (-50)) (bSquare (constant 200))--this seems weird???????????????
 

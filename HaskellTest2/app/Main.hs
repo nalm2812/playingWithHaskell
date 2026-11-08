@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behLongerBounce--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behProperBounce--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -104,27 +104,40 @@ dt :: Float
 dt = 0.01--delta time. How much is incremented in the recursive call when calculating integral and predicate
 
 
+--bounce related
+
+
+--used for bounce where bounce ensures the starting position isn't below minY if the given starting position is less than minY
+--use (at min 0) because its a constant so it'll work, this isnt' the best way
+--this was only made because for some reason it wouldn't compile unless in a seperate function, it said the typing was wrong or something
+--if min is larger than starting position, it'll take min, otherwise starting position
+startBounceY :: Behavior Float -> Float -> Float
+startBounceY min = max (at min 0)
+
+
 
 
 --wave behavior related
 
-
+--adds a point to a wave based on time
+--the function is e.g. either sin or cos
 addPoint :: Float -> Float -> Float -> (Float -> Float) -> Point
 addPoint t w h f= (t*w, h*f t)
 
+--aux function that is used to build a path for a wave
+--acc is the resulting path
+--has fixed with of 10 and height of 100
+--time has increments of dt
 waveAux :: [Point] -> Float -> (Float -> Float) -> Float -> Path
 waveAux acc ti f t = if ti>=t then acc else waveAux (addPoint ti 10 100 f:acc) (ti+dt) f t
 
 
 
---weird other section
 
 
-atFloat :: Behavior Float -> Float
-atFloat min = at min 0
 
-uhhhh :: Behavior Float -> Float -> Float
-uhhhh min = max (atFloat min)
+
+
 
 
 --functions that take behaviors as argument
@@ -274,7 +287,7 @@ bFloatToString :: Behavior Float -> Behavior String
 bFloatToString (Behavior b) = Behavior c where c t = let (ab, bb) = b t in (show ab, bFloatToString bb)
 
 bProperBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-bProperBounce min max r v start = let properStart = uhhhh min start in bTranslate (constant 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
+bProperBounce min max r v start = let properStart = startBounceY min start in bTranslate (constant 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
 
 bProperBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 bProperBounceWithSquare min max r v start= bCombinePictures (bProperBounce min max r v start) (bProperSquare min max r)
@@ -288,7 +301,7 @@ bProperSquare min max r = bTranslate (bSquareLengthForBounce min max r |/ consta
 bHorizontalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 bHorizontalBounceWithSquare min max r v start = bCombinePictures (bHorizontalBounce min max r v start) (bHorizontalSquare min max r)
 bHorizontalBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-bHorizontalBounce min max r v start = let properStart = uhhhh min start in bTranslate (fBounce min max properStart v (constant 0) 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
+bHorizontalBounce min max r v start = let properStart = startBounceY min start in bTranslate (fBounce min max properStart v (constant 0) 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
 
 bHorizontalSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
 bHorizontalSquare min max r = bTranslate (constant (-1) |* min) (min |- r) (bSquare (bSquareLengthForBounce min max r))

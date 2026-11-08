@@ -384,11 +384,17 @@ bAbs = lift1 abs
 
 --please do not use these, these functions are either useless or dangerous
 
+--meant to take a picture that is a shape (lineLoop) and turn it in to a polygon, and it works, but it is very easy prone to error
+--since it accepts any picture, if given a picture that is not a lineLoop, it will just crash
+--also this is more object-orientated
 bFillPolygon :: Behavior Picture -> Behavior Picture
 bFillPolygon (Behavior p) = Behavior b where b t = let (Line a, ab) = p t in (polygon a, bFillPolygon ab)
 
+--takes circle behavior and fills it, but has same problem as bFillPolygon
+--it does technically work though
+--also this is more object-orientated
 bCircleFill :: Behavior Picture -> Behavior Picture
-bCircleFill (Behavior p) = Behavior b where b t = let (Circle a, ab) = p t in (circleSolid a, bFillPolygon ab)
+bCircleFill (Behavior p) = Behavior b where b t = let (Circle a, ab) = p t in (circleSolid a, bCircleFill ab)
 
 
 

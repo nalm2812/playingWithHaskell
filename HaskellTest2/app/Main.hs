@@ -1127,7 +1127,7 @@ currentT = unsafePerformIO $ newIORef 0
 
 --used for testing sample in regards to memory leak
 --behavior contains t until t>=5 where it then contains 0 and the simplified behavior is t-5
---basically the behavior at t>=5 starts all over and then continues on "as normal" but 5 seconds delayed forever 
+--basically the behavior at t>=5 starts all over and then continues on "as normal" but 5 seconds delayed forever
 simpleBeh :: Behavior Float
 simpleBeh = Behavior b1
    where
@@ -1135,23 +1135,37 @@ simpleBeh = Behavior b1
    b1 t | t < 5 = (t, Behavior b1)
         | otherwise = (0, Behavior b2)
 
-sampleTest :: Behavior Picture
-sampleTest = bTranslate (simpleBeh|*constant 100) (constant 0) behCircle80
+--tests simpleBeh by making a circle travel right in a straight line using simpleBeh
+--the circle starts from origin, travels right and when t>=5 it goes back to origin and then continues right forever
+--circle has radius 80
+--if this test had x=t then the change would be hard to notice, so x=t*100
+behSampleTest :: Behavior Picture
+behSampleTest = bTranslate (simpleBeh|*constant 100) (constant 0) behCircle80
 
-simpleBeh2 :: Behavior Float
-simpleBeh2 = Behavior b1 where b1 t = (t, Behavior b1)
+--behavior that contains t
+--used to replicate simpleBeh but with predicates and untilB to test sample and memory leaks with predicates/untilB/events
+tBeh :: Behavior Float
+tBeh = Behavior b1 where b1 t = (t, Behavior b1)
 
+--boolean for when time>=5
 predicateTest5 :: Behavior Bool
 predicateTest5 = lift1 (>= 5) time
 
-untilBTestPredicate :: Event (Behavior Float)
-untilBTestPredicate = predicate predicateTest5 0 -=> timeTransform simpleBeh2 (time |- constant 5)
+--event for when time>=5 the behavior becomes tBeh but 5 seconds "delayed"
+untilBsimpleBeh :: Event (Behavior Float)
+untilBsimpleBeh = predicate predicateTest5 0 -=> timeTransform tBeh (time |- constant 5)
 
-sampleTest2 :: Behavior Float
-sampleTest2 = simpleBeh `untilB` untilBTestPredicate
 
-sampleTest2Exe :: Behavior Picture
-sampleTest2Exe = bTranslate (sampleTest2|*constant 100) (constant 0) behCircle80
+--identical to simpleBeh but uses untilB and predicates to achieve the result instead of pattern matching
+simpleBehUntilB :: Behavior Float
+simpleBehUntilB = simpleBeh `untilB` untilBsimpleBeh
+
+--same output as behSampleTest
+--uses untilB and predicate instead of pattern matching
+--also circle that moves right then resets when t>=5
+--circle with radius of 80
+behSampleTestUntilB :: Behavior Picture
+behSampleTestUntilB = bTranslate (simpleBehUntilB|*constant 100) (constant 0) behCircle80
 
 
 

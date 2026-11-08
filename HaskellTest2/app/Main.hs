@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behPredicate--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behSimplerBounce--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -732,14 +732,26 @@ boolForCircle = lift1 (\t -> round t `mod` 5==0) time--idk where else to put it
 
 --bounce related stuff
 
+
+--bounce that takes longer to finish
+--longerBounce when min is 0, max is 500, starts at 400 where v is 100 and gravity is -9.8
+--reciprocity is 0.97
+--its a circle and the radius is 50
+--this is just vertical
 behLongerBounce :: Behavior Picture
 behLongerBounce = bTranslate (constant 0) fUseLongerBounce (bCircle (constant 50))
 
+--mainly used this for testing
+--min is 0, max is 100, radius of circle is 50, gravity is -9.8, reciprocity is 0.8., starting point is 90 and starting v is -50
 behBounce :: Behavior Picture
 behBounce = bTranslate (constant 0) fUseBounce (bCircle (constant 50))
 
+--bounce with no acceleration/gravity
+--circle with radius 50
+--min is 0, max is 100, starts at 100, v starts out as 50, gravity is -9.8 (gravity isnt' used)
 behSimplerBounce :: Behavior Picture
 behSimplerBounce = bTranslate (constant 0) fUseSimpleBounce (bCircle (constant 50))
+
 
 behBounceFloat :: Behavior Picture
 behBounceFloat = bText (bFloatToString fUseBounce)

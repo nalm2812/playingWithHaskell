@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behProperBounce--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behColorPriorityTest--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -72,6 +72,8 @@ untilB b e =  Behavior c where c t = let (te, b') = occ e in if t <= te then (at
 time :: Behavior Float
 time = Behavior (\t -> (t, time))--call on the current time inside the animation
 
+--changes the speed of a behavior
+--used by passing a parameter that is an "equation of time", e.g. (time|-5) to delay it by 5 seconds
 timeTransform :: Behavior a -> Behavior Float -> Behavior a
 timeTransform (Behavior b) (Behavior t2) = Behavior c where c t = let (ta, tb) = t2 t; (a, ab) = b ta in (a, timeTransform ab tb)
 
@@ -154,12 +156,19 @@ bTranslate = lift3 translate--moves shape from default, which is (0,0)
 bRotate :: Behavior Float -> Behavior Picture -> Behavior Picture
 bRotate = lift2 rotate--rotates a given picure by the given Behavior Float in degrees
 
+--closed loop on a path, otherwise despite whatever points are in the path there will be a gap if normal line is used instead
+--used for shapes with no fill
 bLineLoop :: Behavior Path -> Behavior Picture
 bLineLoop = lift1 lineLoop
 
+--created a rectangle centered on the origin (0,0)
+--first parameter is width and the second one is height
 bRectanglePath :: Behavior Float -> Behavior Float -> Behavior Path
 bRectanglePath = lift2 rectanglePath
 
+--if the shape has no fill, the outline is colored, otherwise fill
+--if e.g. two circles with no fill then both outlines are colored
+--if a behavior that already has a color gets "colored again", it won't get colored and it'll stay the same color (see behColorPriorityTest for example)
 bColor :: Behavior Color -> Behavior Picture -> Behavior Picture
 bColor = lift2 color
 
@@ -740,6 +749,13 @@ behRectangleZoom = bDoubleZoom behRectangle--length is 80 and height is 40
 
 behColor :: Behavior Picture
 behColor = bColor (constant red) behTwoWiggle--outline of the two circles in wiggle become bright red
+
+behColor2 :: Behavior Picture
+behColor2 = bColor (constant red) (behTwoWiggle `bCombinePictures` bColor (constant violet) behCircleZoom)
+
+behColorPriorityTest :: Behavior Picture
+behColorPriorityTest = bColor (constant violet) behColor--this is red, i.e. the exact same as behColor
+
 
 
 

@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behPredicate--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behHorizontalBounce--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -305,8 +305,8 @@ bBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float
 bBounce minY maxY r v start = let properStart = startBounceY minY start in bTranslate (constant 0) (fBounce minY maxY properStart v (constant (-9.8)) 0) (bCircle r)
 
 --same as bProperBounce but creates a square around the bounce behavior so the circle collides inside the square
-bProperBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-bProperBounceWithSquare minY maxY r v start= bCombinePictures (bBounce minY maxY r v start) (bProperSquare minY maxY r)
+bVerticalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
+bVerticalBounceWithSquare minY maxY r v start= bCombinePictures (bBounce minY maxY r v start) (bBounceSquare minY maxY r)
 
 --calculates the length sqaure that should be drawn around bounce using the min and max y values and the radius of the circle
 --radius is used to calculate when the sides collide, as technically the min and max is for the center of the circle
@@ -317,18 +317,23 @@ bSquareLengthForBounce minY maxY r = (maxY |- minY) |+ (r |* constant 2)
 --creates square for bounce and moves it into the correct place
 --assumes bounce occurs in the middle (y=0)
 --for vertical bounce
-bProperSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-bProperSquare minY maxY r = bTranslate (bSquareLengthForBounce minY maxY r |/ constant (-2)) (minY |- r) (bSquare (bSquareLengthForBounce minY maxY r))
+bBounceSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
+bBounceSquare minY maxY r = bTranslate (bSquareLengthForBounce minY maxY r |/ constant (-2)) (minY |- r) (bSquare (bSquareLengthForBounce minY maxY r))
 
---
-bHorizontalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-bHorizontalBounceWithSquare minY maxY r v start = bCombinePictures (bHorizontalBounce minY maxY r v start) (bHorizontalSquare minY maxY r)
+--same as verticalBounceWithSquare but bounces both horizontally and vertically
+--min and max for both x and y are assumed to be the same value
+bAlllBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
+bAlllBounceWithSquare minAll maxAll r v start = bCombinePictures (bAllBounce minAll maxAll r v start) (bAllSquare minAll maxAll r)
 
-bHorizontalBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-bHorizontalBounce minY maxY r v start = let properStart = startBounceY minY start in bTranslate (fBounce minY maxY properStart v (constant 0) 0) (fBounce minY maxY properStart v (constant (-9.8)) 0) (bCircle r)
+--same as verticalBounceWithSquare but bounces both horizontally and vertically
+--min and max for both x and y are assumed to be the same value
+bAllBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
+bAllBounce minAll maxAll r v start = let properStart = startBounceY minAll start in bTranslate (fBounce minAll maxAll properStart v (constant 0) 0) (fBounce minAll maxAll properStart v (constant (-9.8)) 0) (bCircle r)
 
-bHorizontalSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-bHorizontalSquare minY maxY r = bTranslate (constant (-1) |* minY) (minY |- r) (bSquare (bSquareLengthForBounce minY maxY r))
+--same as bProperSquare but the bounce bounces both horizontally and vertically
+--min and max for both x and y are assumed to be the same value
+bAllSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
+bAllSquare minAll maxAll r = bTranslate (constant (-1) |* minAll) (minAll |- r) (bSquare (bSquareLengthForBounce minAll maxAll r))
 
 
 
@@ -660,16 +665,16 @@ behBounceSquare :: Behavior Picture
 behBounceSquare = bCombinePictures behSquareAround behBounce
 
 behProperBounce :: Behavior Picture
-behProperBounce = bProperBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
+behProperBounce = bVerticalBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 
 behHorizontalBounce :: Behavior Picture
-behHorizontalBounce = bHorizontalBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
+behHorizontalBounce = bAlllBounceWithSquare (constant 50) (constant 200) (constant 100) 70 0
 
 behNoLagBounce :: Behavior Picture
-behNoLagBounce = bProperBounceWithSquare (constant 0) (constant 100) (constant 50) 50 100
+behNoLagBounce = bVerticalBounceWithSquare (constant 0) (constant 100) (constant 50) 50 100
 
 behSmallBall :: Behavior Picture
-behSmallBall = bHorizontalBounce (constant 0) (constant 300) (constant 10) 40 42
+behSmallBall = bAllBounce (constant 0) (constant 300) (constant 10) 40 42
 
 
 --wave behavior related

@@ -1050,37 +1050,40 @@ fIntegral2 b t0 = Behavior2 (fBadIntRec2 b t0 0)
 
 wrongIntRec :: Behavior Float -> Float -> Float -> Float -> IO (Float , Behavior Float)
 wrongIntRec (Behavior b) ti a t = do
-    --x <- readIORef counter
-    --writeIORef counter (x+1)
-    tracking ti t a
-    --increment
-    atomicWriteIORef prevAcc a
-    atomicWriteIORef prevT0 ti
-    if ti>=t then let c = fIntRec (Behavior b) ti a in return (a, Behavior c) else wrongIntRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti
+    --x <- readIORef recCounter      --used when measuring amount of recursion
+    --writeIORef recCounter (x+1)    --used to count recursion
+    tracking ti t a               --used to track ti and t and also print other stuff, basically anything other than recCounter
+    --increment                    -- used to increment recCounter at some point
+    atomicWriteIORef prevAcc a     --write the current acc and since it happens after the tracking function where acc is checked, it tracks the "previous" acc
+    atomicWriteIORef prevT0 ti     --same as acc but with t0/ti
+    if ti>=t then let c = fIntRec (Behavior b) ti a in return (a, Behavior c) else wrongIntRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti--this is just regular intRec. Tried fixing some floating point arithmetic thingy but it did nothing
 
 prevT0 :: IORef Float
-prevT0 = unsafePerformIO $ newIORef 0
+prevT0 = unsafePerformIO $ newIORef 0--global variable of previous t0
 
 prevAcc :: IORef Float
-prevAcc = unsafePerformIO $ newIORef 0
+prevAcc = unsafePerformIO $ newIORef 0--global variable of previous acc
 
 wrongIntegral :: Behavior Float -> Float -> IO (Behavior Float)
 wrongIntegral b t0 = trace (show t0) (do
-        writeIORef recCounter 0
-        let d = Behavior c where c t = unsafePerformIO (wrongIntRec b t0 0 t)
+        writeIORef recCounter 0--restarts recCounter as there is a new integral. recCounter is for checking how many recursive calls between two collisions
+        let d = Behavior c where c t = unsafePerformIO (wrongIntRec b t0 0 t)--behaves the same as integral but changes intRec to be not IO
         return d)
 
+--only prints something if t0 is exactly 0 (no rounding)
+--shouldn't be zero at any point in the future except the beginning
 checkT0 :: Float -> IO ()
 checkT0 t0 = do if abs(t0-0) < 1e-10 then print "its zero" else return ()
 
 {-# NOINLINE recCounter #-}
 recCounter :: IORef Integer
-recCounter = unsafePerformIO $ newIORef 0
+recCounter = unsafePerformIO $ newIORef 0--global variable for how many recursive calls between two collisions/in one integral. for checking if there is a memory leak
 
 increment :: IO ()
 increment = do x <- readIORef recCounter
-               if (x `mod` 50000 == 0) then whenTrue else writeIORef recCounter (x+1)
+               if (x `mod` 50000 == 0) then whenTrue else writeIORef recCounter (x+1)--increments recCounter regardless, but also prints out recCounter every 50000 calls
 
+--prints out recCounter and then increments it
 whenTrue :: IO ()
 whenTrue = do x <- readIORef recCounter
               print x
@@ -1088,11 +1091,19 @@ whenTrue = do x <- readIORef recCounter
 
 tracking :: Float -> Float -> Float -> IO ()
 tracking ti t a = do
-                     --if ti>1 then trackingTrue ti t else return ()
-                     --(abs(ti-0)< 1e-10)
+                     --if ti>1 then trackingTrue ti t else return ()            prints out t and ti when ti>1
+                     --(abs(ti-0)< 1e-10)           --the boolean for above but handles floating point arithemtic
                      x <- readIORef prevT0
                      --y <- readIORef prevAcc
+
+                     --supposed to measure when ti becomes smaller compared to the previous value, which should never happen. then prints out ti, t, recCounter and acc if this ever occurs
+                     --note that prevAcc is permanently 0 as it wasn't relevent in the way i thought it was supposed to be
+                     --doesn't take floating point arithimic into account
                      if ti<x then print ("ti: " ++ show ti ++ " x: " ++ show x ++ " acc: " ++ show a ++ " prevacc: " ++ show 0) else return ()
+
+                     --checks if t<1 and if ti==0
+                     --only the ti computation takes into account floating point arithimic
+                     --if true then prints out ti, t, recCounter and acc
                      --if (t<1&&(abs(ti-0)< 1e-10)) then print ("t0: " ++ show ti ++ " " ++ "t: " ++ show t ++ " counter: " ++ show x ++ " acc: " ++ show a) else return ()
 
 trackingTrue :: Float -> Float -> IO ()

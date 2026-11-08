@@ -1125,6 +1125,9 @@ currentT = unsafePerformIO $ newIORef 0
 --sample debugging
 
 
+--used for testing sample in regards to memory leak
+--behavior contains t until t>=5 where it then contains 0 and the simplified behavior is t-5
+--basically the behavior at t>=5 starts all over and then continues on "as normal" but 5 seconds delayed forever 
 simpleBeh :: Behavior Float
 simpleBeh = Behavior b1
    where

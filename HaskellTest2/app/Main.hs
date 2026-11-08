@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behTimeText--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behHelloWorldZoom--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -900,9 +900,14 @@ behRectangleZoom = bFasterZoom behRectangle--length is 80 and height is 40
 behColor :: Behavior Picture
 behColor = bColor (constant red) behTwoWiggle--outline of the two circles in wiggle become bright red
 
+--two circles with red outline wiggle and in the middle there is a zooming circle that has a violet outline
+--all have a radius of 80
+--also shows that because the zooming circle was already colored purple when the entire picture got colored red the zooming circle stays violet
 behColor2 :: Behavior Picture
 behColor2 = bColor (constant red) (behTwoWiggle `bCombinePictures` bColor (constant violet) behCircleZoom)
 
+--it displays the exact same as behColor, but it demostrates how bColor works
+--if a picture has already been colored and it gets colored again, the color wont change at it stays as the first color
 behColorPriorityTest :: Behavior Picture
 behColorPriorityTest = bColor (constant violet) behColor--this is red, i.e. the exact same as behColor
 

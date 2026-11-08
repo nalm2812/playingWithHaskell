@@ -1171,13 +1171,11 @@ behSampleTestUntilB = bTranslate (simpleBehUntilB|*constant 100) (constant 0) be
 
 
 
---code I used beforehand
+--code I used beforehand (traces for debugging)
+
 --intRec _ t0 a _ | trace ("intRec t0:" ++  " " ++ show t0) False = undefined
 --integral (Behavior b) t0 | trace ("integral second behavior : " ++ show (at (snd (b t0)) t0)) False = undefined
 --integral _ t0 | trace ("integral t0: " ++ show t0) False = undefined
---tracking ti = do x <- readIORef tiCounter
-{-do x <- readIORef counter
-                       if x `mod` 1000==0 then print (show x) else -}
 
 
 

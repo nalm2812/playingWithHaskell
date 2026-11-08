@@ -453,30 +453,30 @@ fIntegral b t0 = Behavior (fIntRec b t0 0)
 fIntRec :: Behavior Float -> Float -> Float -> Float -> (Float, Behavior Float)
 fIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (fIntRec (Behavior b) ti a)) else fIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 
+--creates a behavior of the y position of a bouncing shape
+--y0 is the starting position and v0 is the starting velocity and t0 is the starting time
 fBounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
 fBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-        start t0 (y0,v0) =
-                     y `untilB` ( doBounce +=> start)--start and untilB are called less
+        start t0 (y0,v0) = y `untilB` ( doBounce +=> start)--used to
 
-            where y = constant y0 |+ fIntegral v t0--calculate the behavior picture inside here
-                  v = constant v0 |+ fIntegral g t0--seperate integral function so prints are easier to read, figure out what ti is in integral
+            where y = constant y0 |+ fIntegral v t0
+                  v = constant v0 |+ fIntegral g t0
                   reciprocity = 0.8
 
                   doBounce =  snapshot collide (bPair y v) ==> snd ==> (\ (yHit, vHit) ->
-                               (yHit,- (reciprocity * vHit)))--also isnt run
+                               (yHit,- (reciprocity * vHit)))
                   collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
                                         (y >=* maxVal &&* (v >=* constant 0))) t0
 
 fLongerBounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
 fLongerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-        start t0 (y0,v0) =
-                     y `untilB` ( doBounce +=> start)--start and untilB are called less
+        start t0 (y0,v0) = y `untilB` ( doBounce +=> start)
 
-            where y = constant y0 |+ fIntegral v t0--calculate the behavior picture inside here
-                  v = constant v0 |+ fIntegral g t0--seperate integral function so prints are easier to read, figure out what ti is in integral
-                  reciprocity = 0.97
+            where y = constant y0 |+ fIntegral v t0
+                  v = constant v0 |+ fIntegral g t0
+                  reciprocity = 0.97--this is the only difference between this and fBounce
 
                   doBounce =  snapshot collide (bPair y v) ==> snd ==> (\ (yHit, vHit) ->
                                (yHit,- (reciprocity * vHit)))--also isnt run
@@ -486,17 +486,20 @@ fLongerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 fUseLongerBounce :: Behavior Float
 fUseLongerBounce = fLongerBounce (constant 0) (constant 500) 400 100 (constant (-9.8)) 0
 
+--bounce where gravity isn't taken into account at all so integral isn't used at all
+--velocity still changes but only when collision happens
+--values are the same as fBounce
 fSimplerBounce :: Float -> Float -> Float -> Float -> p -> Float -> Behavior Float
 fSimplerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-                      start t0 (y0,v0) = y `untilB` (doBounce +=> start)--as if it calls start right here
+                      start t0 (y0,v0) = y `untilB` (doBounce +=> start)
 
-                          where y = constant y0 |+ (v |* bAbs (time |- constant t0))--calculate the behavior picture inside here
+                          where y = constant y0 |+ (v |* bAbs (time |- constant t0))--starting position + (velocity * the amount of time that has passed since collision)
                                 v = constant v0--am i supposed to sample here?
                                 reciprocity = 0.8
 
                                 doBounce = snapshot collide (bPair y v) ==> snd ==> \ (yHit, vHit) ->
-                                                               (yHit,- (1 * (reciprocity * vHit)))--how is the time noted here? whats with the 0.2
+                                                               (yHit,- (1 * (reciprocity * vHit)))
                                 collide = predicate ((y <=* constant minVal &&* (v <=* constant 0)) ||*
                                                       (y >=* constant maxVal &&* (v >=* constant 0))) t0
 

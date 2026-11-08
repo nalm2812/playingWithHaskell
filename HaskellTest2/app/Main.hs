@@ -433,7 +433,7 @@ fWiggleWithRange  = lift3 wiggleWithRange
 --bounce related stuff
 
 
---used in bounce to calculate the integral
+--used in bounce to calculate the velocity and the position of the ball
 --b is the behavior that represents the function of the integral
 --t0 is the starting time from where the integral start
 --note that the acc in fIntRec is 0 as it represents the area under the curve, as this function is executed when a new integral is created
@@ -442,6 +442,14 @@ fWiggleWithRange  = lift3 wiggleWithRange
 fIntegral :: Behavior Float -> Float -> Behavior Float
 fIntegral b t0 = Behavior (fIntRec b t0 0)
 
+--used by integral to calculate the area under a curve
+--area is calculated by calculating the area of a small rectangle where height is the value of Behavior b at time ti and the width is dt
+--this area gets added to an accumulator that is the result
+--runs until ti>=t, where ti is incremented by dt every recursion
+--the reason not ti==t is because of float point arithmetic and also so they dont have to be the exact same value. Solves the problem of dt because kind of large
+--returns a tuple to prevent memory leak. The tuple is for the content of the Behavior, as it can then be inserted like in fIntegral
+--memory leak is prevented by storing the ti and acc by storing a `Float -> (Float, Behavior Float)` by storing fIntRec inside a behavior that sample can use instead to carry its calculation where it left off rather than start over from scratch
+--`t` must be the last parameter, as it allows for a `Float -> (Float, Behavior Float)` function to be returned, as t is the value that the sample function will insert
 fIntRec :: Behavior Float -> Float -> Float -> Float -> (Float, Behavior Float)
 fIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (fIntRec (Behavior b) ti a)) else fIntRec b' (ti+dt) (a + a'*dt) t where (a',b')=b ti
 

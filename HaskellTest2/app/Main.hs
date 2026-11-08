@@ -295,14 +295,25 @@ bPair (Behavior a) (Behavior b) = Behavior c where c t = let (aa, ab) = a t; (ba
 bFloatToString :: Behavior Float -> Behavior String
 bFloatToString (Behavior b) = Behavior c where c t = let (ab, bb) = b t in (show ab, bFloatToString bb)
 
+--can create a vertical bounce behavior (no horizontal)
+--min and max are min and max y values for the **center** of the circle, not for the edges of the circle
+--start is starting y position
+--v is starting velocity
+--g is assumed to be gravity (-9.8)
+--shape is assumed to be circle
 bProperBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 bProperBounce min max r v start = let properStart = startBounceY min start in bTranslate (constant 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
 
+--same as bProperBounce but creates a square around the bounce behavior so the circle collides inside the square
 bProperBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
 bProperBounceWithSquare min max r v start= bCombinePictures (bProperBounce min max r v start) (bProperSquare min max r)
 
+--calculates the length sqaure that should be drawn around bounce using the min and max y values and the radius of the circle
+--radius is used to calculate when the sides collide, as technically the min and max is for the center of the circle
+--this only applies when the shape is a circle
 bSquareLengthForBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
 bSquareLengthForBounce min max r = (max |- min) |+ (r |* constant 2)
+
 
 bProperSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
 bProperSquare min max r = bTranslate (bSquareLengthForBounce min max r |/ constant (-2)) (min |- r) (bSquare (bSquareLengthForBounce min max r))

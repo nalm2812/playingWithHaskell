@@ -891,7 +891,7 @@ wrongIntRec (Behavior b) ti a t = do
     --increment
     atomicWriteIORef prevAcc a
     atomicWriteIORef prevT0 ti
-    if ti>=t then let c t = (fIntRec (Behavior b) ti a t) in return (a, Behavior c) else wrongIntRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti
+    if ti>=t then let c = fIntRec (Behavior b) ti a in return (a, Behavior c) else wrongIntRec b' (((ti+dt)*100)/100) (a + a'*dt) t where (a',b')=b ti
 
 prevT0 :: IORef Float
 prevT0 = unsafePerformIO $ newIORef 0
@@ -901,25 +901,25 @@ prevAcc = unsafePerformIO $ newIORef 0
 
 wrongIntegral :: Behavior Float -> Float -> IO (Behavior Float)
 wrongIntegral b t0 = trace (show t0) (do
-        writeIORef counter 0
+        writeIORef recCounter 0
         let d = Behavior c where c t = unsafePerformIO (wrongIntRec b t0 0 t)
         return d)
 
 checkT0 :: Float -> IO ()
 checkT0 t0 = do if abs(t0-0) < 1e-10 then print "its zero" else return ()
 
-{-# NOINLINE counter #-}
-counter :: IORef Integer
-counter = unsafePerformIO $ newIORef 0
+{-# NOINLINE recCounter #-}
+recCounter :: IORef Integer
+recCounter = unsafePerformIO $ newIORef 0
 
 increment :: IO ()
-increment = do x <- readIORef counter
-               if (x `mod` 50000 == 0) then whenTrue else writeIORef counter (x+1)
+increment = do x <- readIORef recCounter
+               if (x `mod` 50000 == 0) then whenTrue else writeIORef recCounter (x+1)
 
 whenTrue :: IO ()
-whenTrue = do x <- readIORef counter
+whenTrue = do x <- readIORef recCounter
               print x
-              writeIORef counter (x+1)
+              writeIORef recCounter (x+1)
 
 tracking :: Float -> Float -> Float -> IO ()
 tracking ti t a = do

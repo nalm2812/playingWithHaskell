@@ -495,10 +495,13 @@ fLongerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                   collide = predicate ((y <=* minVal &&* (v <=* constant 0)) ||*
                                         (y >=* maxVal &&* (v >=* constant 0))) t0
 
+--fLongerBounce where the parameters are filled out
+--longerBounce when min is 0, max is 500, starts at 400 where v is 100 and gravity is -9.8
 fUseLongerBounce :: Behavior Float
 fUseLongerBounce = fLongerBounce (constant 0) (constant 500) 400 100 (constant (-9.8)) 0
 
---bounce where gravity isn't taken into account at all so integral isn't used at all
+--bounce where there is no acceleration nor decelleration as gravity isn't used at all
+--therefore integrals are used at all
 --velocity still changes but only when collision happens
 --values are the same as fBounce
 fSimplerBounce :: Float -> Float -> Float -> Float -> p -> Float -> Behavior Float
@@ -515,11 +518,15 @@ fSimplerBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
                                 collide = predicate ((y <=* constant minVal &&* (v <=* constant 0)) ||*
                                                       (y >=* constant maxVal &&* (v >=* constant 0))) t0
 
+--fBounce where the parameters are filled out
+--min is 0, max is 100, starts at 90, v starts out as -50, gravity is -9.8
 fUseBounce :: Behavior Float
 fUseBounce = fBounce (constant 0) (constant 100) 90 (-50) (constant (-9.8)) 0
 
-fUseBounceSimple :: Behavior Float
-fUseBounceSimple = fSimplerBounce 0 100 100 50 (constant (-9.8)) 0
+--fSimpleBounce where the parameters are filled out
+--min is 0, max is 100, starts at 100, v starts out as 50, gravity is -9.8 (gravity isnt' used)
+fUseSimpleBounce :: Behavior Float
+fUseSimpleBounce = fSimplerBounce 0 100 100 50 (constant (-9.8)) 0
 
 
 
@@ -701,7 +708,7 @@ behBounce :: Behavior Picture
 behBounce = bTranslate (constant 0) fUseBounce (bCircle (constant 50))
 
 behSimplerBounce :: Behavior Picture
-behSimplerBounce = bTranslate (constant 0) fUseBounceSimple (bCircle (constant 50))
+behSimplerBounce = bTranslate (constant 0) fUseSimpleBounce (bCircle (constant 50))
 
 behBounceFloat :: Behavior Picture
 behBounceFloat = bText (bFloatToString fUseBounce)

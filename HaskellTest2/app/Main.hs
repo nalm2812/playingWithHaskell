@@ -458,11 +458,16 @@ fIntRec (Behavior b) ti a t = if ti>=t then (a, Behavior (fIntRec (Behavior b) t
 fBounce :: Behavior Float -> Behavior Float -> Float -> Float -> Behavior Float -> Float -> Behavior Float
 fBounce minVal maxVal y0 v0 g t0 = start t0 (y0, v0) where
 
-        start t0 (y0,v0) = y `untilB` ( doBounce +=> start)--used to
+        --used to basically have an infinite loop, as start is recursive and gets different values when collision happens
+        --start is called whenever collision happens, which is represented by the event `doBounce`
+        --(doBounce +=> start) creates an event that occurs when a collision occurs and contains `start t0 (y0, v0)`, where t0 is the time of collision and (y0, v0) are the values inside doBounce
+        --basically start is defined as "perform this behavior until collision, where start is called again but with the values inside doBounce"
+        --(y0, v0) inside doBounce is the y coordinate of the shape and the new lower velocity
+        start t0 (y0,v0) = y `untilB` ( doBounce +=> start)
 
-            where y = constant y0 |+ fIntegral v t0
-                  v = constant v0 |+ fIntegral g t0
-                  reciprocity = 0.8
+            where y = constant y0 |+ fIntegral v t0--integral of velocity is distance traveled
+                  v = constant v0 |+ fIntegral g t0--behavior that contains the velocity and a given time, as velocity changes due to gravity/acceleration. Integral of acceleration is velocity
+                  reciprocity = 0.8--velocity becomes 0.8 slower when collision
 
                   doBounce =  snapshot collide (bPair y v) ==> snd ==> (\ (yHit, vHit) ->
                                (yHit,- (reciprocity * vHit)))

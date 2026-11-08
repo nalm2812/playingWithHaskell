@@ -123,6 +123,7 @@ startBounceY minY = max (at minY 0)
 
 --adds a point to a wave based on time
 --the function is e.g. either sin or cos
+--note that w and h are intended to be used on sin and cos waves
 addPoint :: Float -> Float -> Float -> (Float -> Float) -> Point
 addPoint t w h f= (t*w, h*f t)
 
@@ -534,9 +535,21 @@ fUseSimpleBounce = fSimplerBounce 0 100 100 50 (constant (-9.8)) 0
 --wave behavior related
 
 
+--recursive function that adds a point in a line that is supposed to look like a wave
+--very similar to fIntRec
+--acc is the line as a picture
+--f is e.g. sin or cos
+--w and h are the width and height of the line (as in the width of the wave in a sine curve and the height of the sin curve)
+--note that w and h are intended to be used on sin and cos waves
+--note that dt isn't used here, but instead 0.001 is used
+--just like fIntRec this function returns a tuple to avoid memory leak by storing the point where the recursive function has reached to so sampling doesn't have to start from scratch
+--this is the simplified behavior
+--similarly, t has to be the last parameter so a `Float -> (Picture, Behavior Picture)` can be created inside a behavior
+--`t` is also not stored inside the stored behavior because the behavior has to contain a function and so the stored behavior has a function that sample can utilize
 fWaveRec :: [Point] -> Float -> Float -> Float -> (Float -> Float) -> Float -> (Picture, Behavior Picture)
 fWaveRec acc ti w h f t =if ti>=t then (line acc, Behavior (fWaveRec acc ti w h f)) else fWaveRec (addPoint ti w h f:acc) (ti+0.001) w h f t
 
+--a behavior that displays "t = *insert current time*" and changes with the time
 sTimeText :: Behavior String
 sTimeText =  Behavior b where b t = ("t = " ++ show t, sTimeText)--idk where else to put it
 

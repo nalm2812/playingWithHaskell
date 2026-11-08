@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behColorPriorityTest--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behPredicate--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -100,7 +100,7 @@ cosWiggleMotion t = cos (pi*t)--time to wiggle position with cos
 --same as wiggle but can decide min and max height
 --the wiggle parameter allows it to take a "wiggle function", used to determine whether the wiggle follows sin or cos or if the function is changed in any other way (like speed)
 wiggleWithRange :: Float -> Float -> Float -> Float
-wiggleWithRange hi lo wiggleMotion = lo + (hi-lo) * (wiggleMotion+1)/2
+wiggleWithRange hi lo wiggleFunc = lo + (hi-lo) * (wiggleFunc+1)/2
 
 dt :: Float
 dt = 0.01--delta time. How much is incremented in the recursive call when calculating integral and predicate
@@ -114,7 +114,7 @@ dt = 0.01--delta time. How much is incremented in the recursive call when calcul
 --this was only made because for some reason it wouldn't compile unless in a seperate function, it said the typing was wrong or something
 --if min is larger than starting position, it'll take min, otherwise starting position
 startBounceY :: Behavior Float -> Float -> Float
-startBounceY min = max (at min 0)
+startBounceY minY = max (at minY 0)
 
 
 
@@ -301,30 +301,34 @@ bFloatToString (Behavior b) = Behavior c where c t = let (ab, bb) = b t in (show
 --v is starting velocity
 --g is assumed to be gravity (-9.8)
 --shape is assumed to be circle
-bProperBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-bProperBounce min max r v start = let properStart = startBounceY min start in bTranslate (constant 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
+bBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
+bBounce minY maxY r v start = let properStart = startBounceY minY start in bTranslate (constant 0) (fBounce minY maxY properStart v (constant (-9.8)) 0) (bCircle r)
 
 --same as bProperBounce but creates a square around the bounce behavior so the circle collides inside the square
 bProperBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-bProperBounceWithSquare min max r v start= bCombinePictures (bProperBounce min max r v start) (bProperSquare min max r)
+bProperBounceWithSquare minY maxY r v start= bCombinePictures (bBounce minY maxY r v start) (bProperSquare minY maxY r)
 
 --calculates the length sqaure that should be drawn around bounce using the min and max y values and the radius of the circle
 --radius is used to calculate when the sides collide, as technically the min and max is for the center of the circle
 --this only applies when the shape is a circle
 bSquareLengthForBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Float
-bSquareLengthForBounce min max r = (max |- min) |+ (r |* constant 2)
+bSquareLengthForBounce minY maxY r = (maxY |- minY) |+ (r |* constant 2)
 
-
+--creates square for bounce and moves it into the correct place
+--assumes bounce occurs in the middle (y=0)
+--for vertical bounce
 bProperSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-bProperSquare min max r = bTranslate (bSquareLengthForBounce min max r |/ constant (-2)) (min |- r) (bSquare (bSquareLengthForBounce min max r))
+bProperSquare minY maxY r = bTranslate (bSquareLengthForBounce minY maxY r |/ constant (-2)) (minY |- r) (bSquare (bSquareLengthForBounce minY maxY r))
 
+--
 bHorizontalBounceWithSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-bHorizontalBounceWithSquare min max r v start = bCombinePictures (bHorizontalBounce min max r v start) (bHorizontalSquare min max r)
+bHorizontalBounceWithSquare minY maxY r v start = bCombinePictures (bHorizontalBounce minY maxY r v start) (bHorizontalSquare minY maxY r)
+
 bHorizontalBounce :: Behavior Float -> Behavior Float -> Behavior Float -> Float ->  Float -> Behavior Picture
-bHorizontalBounce min max r v start = let properStart = startBounceY min start in bTranslate (fBounce min max properStart v (constant 0) 0) (fBounce min max properStart v (constant (-9.8)) 0) (bCircle r)
+bHorizontalBounce minY maxY r v start = let properStart = startBounceY minY start in bTranslate (fBounce minY maxY properStart v (constant 0) 0) (fBounce minY maxY properStart v (constant (-9.8)) 0) (bCircle r)
 
 bHorizontalSquare :: Behavior Float -> Behavior Float -> Behavior Float -> Behavior Picture
-bHorizontalSquare min max r = bTranslate (constant (-1) |* min) (min |- r) (bSquare (bSquareLengthForBounce min max r))
+bHorizontalSquare minY maxY r = bTranslate (constant (-1) |* minY) (minY |- r) (bSquare (bSquareLengthForBounce minY maxY r))
 
 
 
@@ -624,7 +628,7 @@ behSecondWiggle = bCosWiggleMoveLocation (constant 100) (constant 100)
 --event stuff
 
 boolSaved :: Behavior Bool
-boolSaved = lift1 (\t -> abs((sin (t*pi))-1) < 1e-10) time
+boolSaved = lift1 (\t -> abs(sin (t*pi)-1) < 1e-10) time
 
 behPredicate :: Behavior Picture
 behPredicate = untilB behWiggle eventPredicate

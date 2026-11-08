@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behHorizontalBounce--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef behSquareAround--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -362,6 +362,22 @@ bManyCirclesAux counter acc = if counter==20 then acc else bManyCirclesAux (coun
 
 
 
+
+
+--forever circle related
+
+
+bForeverAux :: Behavior Picture -> Float -> Float -> Behavior Picture
+bForeverAux b t amount= if t==amount then b `untilB` eventACircleLater b t else bForeverAux (b `untilB` eventACircleLater b t) (t+1) amount
+
+bBetterCircleLater :: Behavior Picture -> Float -> Behavior Picture
+bBetterCircleLater b counter = bCombinePictures b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
+
+
+
+
+
+
 --other
 
 
@@ -625,19 +641,6 @@ behLargeSinWave = Behavior b where b _ = (line (waveAux [] 0 sin (60*5)), behLar
 --there is a trace here
 behALotOfCircles :: Behavior Picture
 behALotOfCircles = aux behCircle80 1 where aux acc counter = trace "aux" ( if counter==101 then acc else aux (bCombinePictures acc (bTranslate (constant (10*counter)) (constant 0) behCircle80)) (counter+1))
-
-
-
-
-
---forever circle related
-
-
-bForeverAux :: Behavior Picture -> Float -> Float -> Behavior Picture
-bForeverAux b t amount= if t==amount then b `untilB` eventACircleLater b t else bForeverAux (b `untilB` eventACircleLater b t) (t+1) amount
-
-bBetterCircleLater :: Behavior Picture -> Float -> Behavior Picture
-bBetterCircleLater b counter = bCombinePictures b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
 
 
 

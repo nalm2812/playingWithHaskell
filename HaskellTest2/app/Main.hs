@@ -141,8 +141,14 @@ waveAux acc ti f t = if ti>=t then acc else waveAux (addPoint ti 10 100 f:acc) (
 whenSinIs0 :: Float -> Bool
 whenSinIs0 t = abs (sin t) <= dt--cannot be 0, idk why
 
+--firstly it cannot be at the start of the program (t=0)
+--secondly, there is a boolean as a parameter and that must be true for this boolean to be true
+--the boolean parameter is used in bNewCircleForeverPrettier to ensure that this boolean is first true when an "outside" boolean is true (when 5 seconds has passed)
+--when the parameter boolean is true, it checks if sin is 0
+--beforehand I also made it so it would not be true if t was divisble by 5, but I cannot remember why I did that, nor can I see much of a difference
+--`&& round t `mod`5 /= 0` was the code
 whenSin0AndPast5Seconds :: Float -> Bool -> Bool
-whenSin0AndPast5Seconds t b =  t /= 0 && (b && whenSinIs0 t && round t `mod`5 /= 0)--if constant true then weird stuff because its supposed to be false at the beginning
+whenSin0AndPast5Seconds t b =  t /= 0 && (b && whenSinIs0 t)--if constant true then weird stuff because its supposed to be false at the beginning
 
 
 
@@ -375,8 +381,15 @@ bManyCirclesAux counter acc = if counter==20 then acc else bManyCirclesAux (coun
 --forever circle related
 
 
-bForeverAux :: Behavior Picture -> Float -> Float -> Behavior Picture
-bForeverAux b t amount= if t==amount then b `untilB` eventACircleLater b t else bForeverAux (b `untilB` eventACircleLater b t) (t+1) amount
+--used for the behavior that adds a number of circles every 5 seconds to a picture until it reaches that amount
+--behForever
+--creates a behavior that "contains" events that make it so every 5 seconds a picture is added next to the previous circle
+--see "eventACircleLater" for more details
+--basically takes the accumulator and says "perform accumulator" (the previous animation) until the new event is supposed to occur
+--the "new event" basically says "in 5 seconds later, the animation is going to get a new circle added to it"
+--keeps using untilB until "amount" has been reached
+bAddingCirclesAux :: Behavior Picture -> Float -> Float -> Behavior Picture
+bAddingCirclesAux acc counter amount= if counter==amount then acc `untilB` eventACircleLater acc counter else bAddingCirclesAux (acc `untilB` eventACircleLater acc counter) (counter+1) amount
 
 bBetterCircleLater :: Behavior Picture -> Float -> Behavior Bool -> (Behavior Picture, Behavior Bool)
 bBetterCircleLater b counter bool = (bCombinePictures b (bTranslate (constant ((counter+1)*100)) (constant 0) behCircleZoom), lift1 (not . at bool) time)
@@ -882,9 +895,10 @@ behAgain :: Behavior Picture
 behAgain = behHomeeee `untilB` eventACircleLater behHomeeee 2
 
 behForever :: Behavior Picture
-behForever = bForeverAux behCircleZoom 1 20
+behForever = bAddingCirclesAux behCircleZoom 1 20
 
 behNewCircleForever :: Behavior Picture
+
 behNewCircleForever = bNewCircleForever 0 behCircleZoom
 
 behForeverFalseTest :: Behavior Picture

@@ -14,7 +14,7 @@ main :: IO ()
 
 
 main = do
-        usedBehavior <- newIORef behNewCircleForeverPrettier--this is where I insert the behavior I want to run
+        usedBehavior <- newIORef beh20Circles--this is where I insert the behavior I want to run
 
         --sample function that turns the Behavior into a (Float -> Picture) that the animateIO function can use
         --this sample function also makes sure to use the simplest behavior that is given (the behavior inside the tuple)
@@ -916,26 +916,29 @@ behTimeText = bText sTimeText
 --forever circle related
 
 
-behHomeeee :: Behavior Picture
-behHomeeee = behCircleZoom `untilB` eventACircleLater behCircleZoom 1
+--adds another circle after 5 seconds
+--was created as a test to build the fundamentals for beh20Circles
+beh1CircleAfter5 :: Behavior Picture
+beh1CircleAfter5 = behCircleZoom `untilB` eventACircleLater behCircleZoom 1
 
-behAgain :: Behavior Picture
-behAgain = behHomeeee `untilB` eventACircleLater behHomeeee 2
+--adds a new circle every 5 seconds until 20 circles have been reached
+--after 20 seconds the zooming continues but no new circles are added
+beh20Circles :: Behavior Picture
+beh20Circles = bAddingCirclesAux behCircleZoom 1 20
 
-behForever :: Behavior Picture
-behForever = bAddingCirclesAux behCircleZoom 1 20
-
+--tests out bNewCircleForever and creates a new circle every 5 seconds
 behNewCircleForever :: Behavior Picture
-
 behNewCircleForever = bNewCircleForever 0 behCircleZoom
 
+--tests that eventForeverFalseUsage works, as it should never display a square and only be a circle zooming
 behForeverFalseTest :: Behavior Picture
 behForeverFalseTest = behCircleZoom `untilB` eventForeverFalseUsage
 
+--tests out bNewCircleForever and creates a circle when 5 seconds has passed and when the circle is smallest so its smoother
 behNewCircleForeverPrettier :: Behavior Picture
 behNewCircleForeverPrettier = bNewCircleForeverPrettier 0 behCircleZoom
 
---this doesn't work
+--this doesn't work, but is supposed to be the same as behNewCircleForeverPrettier
 behAlternativeNewCircleForever :: Behavior Picture
 behAlternativeNewCircleForever = bAlternativeNewCircleForever 0 behCircleZoom
 
@@ -1074,16 +1077,19 @@ eventPredicate = predicate boolSaved 5 -=> behWiggleSquare
 --forever circle related
 
 
+--used to create a circle after 5 seconds
+--the false as a parameter for the boolForCircle function is just to be able to use the boolForCircle function, it doesn't really matter as only one circle is being added, so hardcoding the false boolean is the most accurate
+--counter is used to count how many circles have been added, so when the parameter is 1 then the second circle will be added, as one circle is already displayed
 eventACircleLater :: Behavior Picture -> Float -> Event (Behavior Picture)
 eventACircleLater b counter = predicate (boolForCircle (constant False)) ((counter-1)*5+1) -=> bCombinePictures b (bTranslate (constant (counter*100)) (constant 0) behCircleZoom)
 
 --this is for debugging
 --A predicate thats just constantly false
---I actually think that this doesn't work because since it's forever false, the predicate is recursive forever
+--It doesn't work because since its forever false, the predicate is recursive forever, as it is never true so it never stops
 eventForeverFalsePredicate :: Event ()
 eventForeverFalsePredicate = predicate boolForeverFalse 0
 
-
+--when eventForeverFalsePredicate is true, then behRectangleZoom should happen, but since it is permanently false, behRectangleZoom should never happen
 eventForeverFalseUsage :: Event (Behavior Picture)
 eventForeverFalseUsage = eventForeverFalsePredicate -=> behRectangleZoom
 

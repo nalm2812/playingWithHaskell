@@ -391,19 +391,38 @@ bManyCirclesAux counter acc = if counter==20 then acc else bManyCirclesAux (coun
 bAddingCirclesAux :: Behavior Picture -> Float -> Float -> Behavior Picture
 bAddingCirclesAux acc counter amount= if counter==amount then acc `untilB` eventACircleLater acc counter else bAddingCirclesAux (acc `untilB` eventACircleLater acc counter) (counter+1) amount
 
+--combines the given picture (b) with another circle that is 100 to the right
+--hardcoded to be the zooming animation
+--also takes a boolean and returns the opposite of the boolean in the tuple that gets returned
+--this is used in bNewCircleForever to continously add circles
 bBetterCircleLater :: Behavior Picture -> Float -> Behavior Bool -> (Behavior Picture, Behavior Bool)
 bBetterCircleLater b counter bool = (bCombinePictures b (bTranslate (constant ((counter+1)*100)) (constant 0) behCircleZoom), lift1 (not . at bool) time)
 
+--used to calculate where the new circle needs to be placed in bBetterCircleLater2
 bCirclePosition :: Behavior Float -> Behavior Float
 bCirclePosition counter = (counter |+ constant 1)|* constant 100
 
+--bool2 is mainly there to receive an input rather than it being used, or else the function wouldnt work
+--same as bBetterCircleLater but it handles more booleans and also contains the counter, as bNewCircleForeverPrettier needs to handle that
+--bool changes to be the opposite (has same purpose as bBetterCircleLater)
+--bool2 is just returned as false, as it basically says "5 seconds has passed)
+--returned a tuple that is used in the same way as bBetterCircleLater
+--this tuple is used to put the variables into the recursive function - basically pass on the variables to the next cycle
 bBetterCircleLater2 :: Behavior Picture -> Behavior Float -> Behavior Bool -> Behavior Bool ->(Behavior Picture, Behavior Bool, Behavior Bool, Behavior Float )
 bBetterCircleLater2 b counter bool bool2= (bCombinePictures b (bTranslate (bCirclePosition counter) (constant 0) behCircleZoom), lift1 (not . at bool) time, constant False, counter|+constant 1)--change from constant false
 
+--recursive function that runs forever that forever adds a new circle every 5 seconds
+--the boolean exists to make sure that after a circle is added the predicate doesn't immediately become true, as that will cause an infinite loop
+--fromIntegral converts result to float so bBetterCircleLater can accept it
+--ceilingn t0/5 is used to figure out the "counter", as in where the circle should be added based on how many circles has already been added/how much time has passed
+--when bool is false the function is waiting for 5, 15, etc. seconds to have passed, whereas if it is true then it is multiples of 10 (10, 20, 30, etc.)
+--start works by taking the starting time, the "accumulated" Behavior Picture and the boolean. When a new circle has been added (when 5 seconds has passed), the new behavior Picture, the current time and the opposite boolean is passed to the next iteration of start
+--t0 is basically the time that the previous circle was added and is used to tell the predicate function "figure out when 5 seconds has passed starting from this point in time"
+--ceiling for t0 is used to round to make sure the counter is not a decimal but rather a whole number
 bNewCircleForever :: Float -> Behavior Picture -> Behavior Picture
 bNewCircleForever t0 b = start t0 (b, constant False) where
-        start t0 (b, bool) = b `untilB` (ughhh +=> start) where
-            ughhh = predicateTired -=> bBetterCircleLater b (fromIntegral (ceiling t0)/5) bool where predicateTired = predicate (boolForCircle bool) t0
+        start t0 (b, bool) = b `untilB` (parameters +=> start) where
+            parameters = event5Seconds -=> bBetterCircleLater b (fromIntegral (ceiling t0)/5) bool where event5Seconds = predicate (boolForCircle bool) t0
 
 bNewCircleForeverPrettier :: Float -> Behavior Picture -> Behavior Picture
 bNewCircleForeverPrettier t0 b = start t0 (b, constant False, constant False, constant 0) where

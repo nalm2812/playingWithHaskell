@@ -408,6 +408,7 @@ bCirclePosition counter = (counter |+ constant 1)|* constant 100
 --bool2 is just returned as false, as it basically says "5 seconds has passed)
 --returned a tuple that is used in the same way as bBetterCircleLater
 --this tuple is used to put the variables into the recursive function - basically pass on the variables to the next cycle
+--counter is now a parameter that is passed around instead of calculated as since each circle is added at an "irregular time" (it doesnt always happen every 5 seconds due to the dependence on sin), counter cannot be calculated
 bBetterCircleLater2 :: Behavior Picture -> Behavior Float -> Behavior Bool -> Behavior Bool ->(Behavior Picture, Behavior Bool, Behavior Bool, Behavior Float )
 bBetterCircleLater2 b counter bool bool2= (bCombinePictures b (bTranslate (bCirclePosition counter) (constant 0) behCircleZoom), lift1 (not . at bool) time, constant False, counter|+constant 1)--change from constant false
 
@@ -424,22 +425,30 @@ bNewCircleForever t0 b = start t0 (b, constant False) where
         start t0 (b, bool) = b `untilB` (parameters +=> start) where
             parameters = event5Seconds -=> bBetterCircleLater b (fromIntegral (ceiling t0)/5) bool where event5Seconds = predicate (boolForCircle bool) t0
 
+--same as bNewCircleForever but it makes sure that the new circle is added when the zoom is at the smallest so it looks smoother, so the circle doesnt just random spawn but rather drawn in a smoother way
+--this is achieved by first creating a behavior with an untilB that measures when 5 seconds has passed by using "untilB"
+--when 5 seconds has passed, bool2 becomes true, and bool2 is basically used to say "this is when you start measuring sin t", as when sin t is 0 that is when the zoom is the smallest, as the zoom is dependent on sin t
+--an event is created using predicate that takes "usedBool" that says "when usedBool is true and when sin t is the smallest it can be (it doenst work if it measures exactly 0), then event occurs"
+--when event occurs, then bBetterCircleLater2 is executed (new circle is added)
+--4 parameters are returned as piped into the next iteration of start
+--counter is now a parameter that is passed around instead of calculated as since each circle is added at an "irregular time" (it doesnt always happen every 5 seconds due to the dependence on sin), counter cannot be calculated
 bNewCircleForeverPrettier :: Float -> Behavior Picture -> Behavior Picture
 bNewCircleForeverPrettier t0 b = start t0 (b, constant False, constant False, constant 0) where
-        start t0 (b, bool, bool2, counter) = b `untilB` (ughhh +=> start) where
-            usedBool =  bool2 `untilB` (predicateTired -=> constant True)
-            predicateTired = predicate (boolForCircle bool) t0
-            ughhh = drink -=> bBetterCircleLater2 b counter bool bool2 where
-                drink = predicate (boolSin usedBool) t0
+        start t0 (b, bool, bool2, counter) = b `untilB` (parameters +=> start) where
+            usedBool =  bool2 `untilB` (event5Seconds -=> constant True)
+            event5Seconds = predicate (boolForCircle bool) t0
+            parameters = eventSin0 -=> bBetterCircleLater2 b counter bool bool2 where
+                eventSin0 = predicate (boolSin usedBool) t0
 
 --this doesn't work
+--tried to replicate bNewCircleForeverPrettier but by using joinEv instead of untilB as it seems like it was the more correct and easier option but it doesn't work
 bAlternativeNewCircleForever :: Float -> Behavior Picture -> Behavior Picture
 bAlternativeNewCircleForever t0 b = start t0 (b, constant False, constant False, constant 0) where
                       start t0 (b, bool, bool2, counter) = b `untilB` (ughhh +=> start) where
-                          predicateTired = predicate (boolForCircle bool) t0
-                          ughhh = joinEv (predicateTired -=> (drink -=> bBetterCircleLater2 b counter bool bool2)) where
+                          event5Seconds = predicate (boolForCircle bool) t0
+                          ughhh = joinEv (event5Seconds -=> (eventSin0 -=> bBetterCircleLater2 b counter bool bool2)) where
 
-                              drink = predicate boolProperSin t0
+                              eventSin0 = predicate boolProperSin t0
 
 
 --other
